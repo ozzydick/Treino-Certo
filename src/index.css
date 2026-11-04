@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Theme tokens dynamically updated via ThemeProvider */
+  --primary: #FF7A1A;
+  --primary-light: #FFAB52;
+  --primary-dark: #CC5A0A;
+  --primary-rgb: 255, 122, 26;
+  --primary-glow: rgba(255, 122, 26, 0.28);
+  --primary-border: rgba(255, 122, 26, 0.4);
+  --primary-surface: rgba(255, 122, 26, 0.1);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #0B0F12;
+  color: #F8FAFC;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Custom Scrollbar for Dark Premium */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0E1318;
+}
+::-webkit-scrollbar-thumb {
+  background: #232C37;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Premium Surface Utility Classes */
+.bg-app-dark {
+  background-color: #0B0F12;
+}
+
+.bg-surface-card {
+  background-color: #121820;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.bg-surface-elevated {
+  background-color: #171F2A;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bg-surface-input {
+  background-color: #0F141C;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Dynamic Primary Color Helpers */
+.bg-primary-app {
+  background-color: var(--primary);
+}
+
+.text-primary-app {
+  color: var(--primary);
+}
+
+.border-primary-app {
+  border-color: var(--primary);
+}
+
+.ring-primary-app {
+  --tw-ring-color: var(--primary);
+}
+
+.glow-primary-app {
+  box-shadow: 0 4px 20px -2px var(--primary-glow);
+}
+
+.glow-primary-sm {
+  box-shadow: 0 2px 10px -1px var(--primary-glow);
+}
+
+/* Safe area insets for mobile navigation */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}

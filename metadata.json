@@ -1,0 +1,6 @@
+{
+  "name": "TREINO CERTO",
+  "description": "TREINO CERTO — Seu treino. Sua evolução. Aplicativo Premium de acompanhamento pessoal de musculação e cardio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
