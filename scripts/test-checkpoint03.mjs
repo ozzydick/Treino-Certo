@@ -701,6 +701,40 @@ async function runCheckpoint03TestSuite() {
     `Todos os 8 arquivos .webp de Costas verificados em public/images/exercises/ e mapeados com object-contain: ${costasVisualMapOk}`
   );
 
+  // TESTE 09E: imagens 3D do Lote Pernas devem estar registradas e presentes em public/images/exercises/ para todos os 16 exercícios de Pernas.
+  const expectedPernasWebpIds = [
+    'ex_quadriceps_agachamento_livre',
+    'ex_quadriceps_leg_press_45',
+    'ex_quadriceps_cadeira_extensora',
+    'ex_quadriceps_hack_squat',
+    'ex_posterior_mesa_flexora',
+    'ex_posterior_cadeira_flexora',
+    'ex_posterior_stiff_barra',
+    'ex_posterior_cadeira_flexora_unilateral',
+    'ex_posterior_terra_romeno_unilateral_halter',
+    'ex_gluteos_elevacao_pelvica_maquina',
+    'ex_gluteos_cadeira_abdutora',
+    'ex_gluteos_extensao_quadril_maquina',
+    'ex_panturrilhas_em_pe_maquina',
+    'ex_panturrilhas_sentado_maquina',
+    'ex_panturrilhas_leg_press',
+    'ex_panturrilhas_unilateral_em_pe_maquina',
+  ];
+  const pernasVisualMapOk = expectedPernasWebpIds.every((id) => {
+    const fileUrl = new URL(`../public/images/exercises/${id}.webp`, import.meta.url);
+    const existsAndNonEmpty = fs.existsSync(fileUrl) && fs.statSync(fileUrl).size > 5000;
+    const mappedInComponent =
+      illustrationSource.includes(`${id}: '/images/exercises/${id}.webp'`) &&
+      illustrationSource.includes('object-contain');
+    return existsAndNonEmpty && mappedInComponent;
+  });
+  assert(
+    pernasVisualMapOk && expectedPernasWebpIds.length === 16,
+    'TESTE 09E',
+    'Imagens 3D do Lote Pernas registradas e presentes em disco para os 16 exercícios oficiais',
+    `Todos os 16 arquivos .webp de Pernas verificados em public/images/exercises/ e mapeados com object-contain: ${pernasVisualMapOk}`
+  );
+
   // TESTE 09B: A imagem 3D aprovada deve ser usada em todos os tamanhos de apresentação.
   const hasUnrestricted3DExerciseImage =
     (/exerciseId\s*===\s*'ex_peito_supino_inclinado_halteres'\s*\?/.test(illustrationSource) ||

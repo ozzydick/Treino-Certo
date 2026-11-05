@@ -657,6 +657,22 @@ export const REALISTIC_3D_EXERCISE_IMAGES: Record<string, string> = {
   ex_costas_remada_unilateral_halter: '/images/exercises/ex_costas_remada_unilateral_halter.webp',
   ex_costas_pullover_polia: '/images/exercises/ex_costas_pullover_polia.webp',
   ex_costas_remada_banco_inclinado: '/images/exercises/ex_costas_remada_banco_inclinado.webp',
+  ex_quadriceps_agachamento_livre: '/images/exercises/ex_quadriceps_agachamento_livre.webp',
+  ex_quadriceps_leg_press_45: '/images/exercises/ex_quadriceps_leg_press_45.webp',
+  ex_quadriceps_cadeira_extensora: '/images/exercises/ex_quadriceps_cadeira_extensora.webp',
+  ex_quadriceps_hack_squat: '/images/exercises/ex_quadriceps_hack_squat.webp',
+  ex_posterior_mesa_flexora: '/images/exercises/ex_posterior_mesa_flexora.webp',
+  ex_posterior_cadeira_flexora: '/images/exercises/ex_posterior_cadeira_flexora.webp',
+  ex_posterior_stiff_barra: '/images/exercises/ex_posterior_stiff_barra.webp',
+  ex_posterior_cadeira_flexora_unilateral: '/images/exercises/ex_posterior_cadeira_flexora_unilateral.webp',
+  ex_posterior_terra_romeno_unilateral_halter: '/images/exercises/ex_posterior_terra_romeno_unilateral_halter.webp',
+  ex_gluteos_elevacao_pelvica_maquina: '/images/exercises/ex_gluteos_elevacao_pelvica_maquina.webp',
+  ex_gluteos_cadeira_abdutora: '/images/exercises/ex_gluteos_cadeira_abdutora.webp',
+  ex_gluteos_extensao_quadril_maquina: '/images/exercises/ex_gluteos_extensao_quadril_maquina.webp',
+  ex_panturrilhas_em_pe_maquina: '/images/exercises/ex_panturrilhas_em_pe_maquina.webp',
+  ex_panturrilhas_sentado_maquina: '/images/exercises/ex_panturrilhas_sentado_maquina.webp',
+  ex_panturrilhas_leg_press: '/images/exercises/ex_panturrilhas_leg_press.webp',
+  ex_panturrilhas_unilateral_em_pe_maquina: '/images/exercises/ex_panturrilhas_unilateral_em_pe_maquina.webp',
 };
 
 export const ExerciseIllustration: React.FC<ExerciseIllustrationProps> = ({
