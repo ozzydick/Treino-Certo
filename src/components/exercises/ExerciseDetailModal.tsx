@@ -167,10 +167,10 @@ export function buildExerciseDetailViewModel(
 
 interface ExerciseDetailModalProps {
   exercise: ExerciseItem | null;
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
-  customEquipments: GymEquipmentItem[];
-  selectedEquipmentIds: Set<string>;
+  customEquipments?: GymEquipmentItem[];
+  selectedEquipmentIds?: Set<string>;
   explicitCustomCompatibilityMap?: ExplicitCustomCompatibilityMap;
   onLinkCustomEquipment?: (
     customEquipmentId: string,
@@ -181,18 +181,20 @@ interface ExerciseDetailModalProps {
     exerciseId: string
   ) => Promise<{ success: boolean; error?: string }>;
   onOpenEquipments?: () => void;
+  onEditCustomExercise?: (exercise: ExerciseItem) => void;
 }
 
 export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
   exercise,
-  isOpen,
+  isOpen = true,
   onClose,
-  customEquipments,
-  selectedEquipmentIds,
+  customEquipments = [],
+  selectedEquipmentIds = new Set<string>(),
   explicitCustomCompatibilityMap = {},
   onLinkCustomEquipment,
   onUnlinkCustomEquipment,
   onOpenEquipments,
+  onEditCustomExercise,
 }) => {
   const { themeConfig } = useTheme();
 
@@ -626,11 +628,26 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
         </div>
 
         {/* Footer Button */}
-        <div className="p-4 border-t border-white/10 bg-surface-elevated/80 shrink-0">
+        <div className="p-4 border-t border-white/10 bg-surface-elevated/80 shrink-0 flex items-center justify-between gap-3">
+          {exercise.isCustom && onEditCustomExercise ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onEditCustomExercise(exercise);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs font-bold transition flex items-center gap-1.5"
+            >
+              <span>Editar Exercício Personalizado</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
           <button
             type="button"
             onClick={onClose}
-            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-surface-card border border-white/10 hover:border-white/25 text-xs font-bold text-white transition"
+            className="px-4 py-2.5 rounded-xl bg-surface-card border border-white/10 hover:border-white/25 text-xs font-bold text-white transition"
           >
             Fechar Consulta
           </button>

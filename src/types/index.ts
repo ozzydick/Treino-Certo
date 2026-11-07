@@ -36,6 +36,21 @@ export interface UserProfile {
   updatedAt: string;
 }
 
+export interface WorkoutGoalConfig {
+  targetWorkoutsPerWeek: number; // 1 to 7
+  preferredDays?: number[]; // 0 = Dom, 1 = Seg, 2 = Ter, 3 = Qua, 4 = Qui, 5 = Sex, 6 = Sáb
+  startDate?: string; // YYYY-MM-DD
+  isActive: boolean;
+}
+
+export interface LocalReminderConfig {
+  isActive: boolean;
+  days: number[]; // 0 = Dom, 1 = Seg, ..., 6 = Sáb
+  time: string; // "HH:MM" e.g. "08:00"
+  message?: string;
+  lastShownDate?: string; // YYYY-MM-DD
+}
+
 export interface UserPreferences {
   id: string;
   theme: ThemeId;
@@ -44,9 +59,51 @@ export interface UserPreferences {
   restTimerDefaultSeconds: number;
   keepScreenAwake: boolean;
   updatedAt: string;
+  // CP06 additions: Metas e Lembretes Locais
+  goalConfig?: WorkoutGoalConfig;
+  reminderConfig?: LocalReminderConfig;
+  customExercises?: ExerciseItem[];
 }
 
-export type NavigationTab = 'home' | 'plan' | 'exercises' | 'cardio' | 'profile';
+export interface WeeklySummaryMetrics {
+  weekStartDate: string;
+  weekEndDate: string;
+  completedWorkouts: number;
+  targetWorkouts: number;
+  compliancePercentage: number;
+  activeDurationSeconds: number;
+  totalVolumeKg: number;
+  previousWeekCompletedWorkouts: number;
+  previousWeekVolumeKg: number;
+  previousWeekDurationSeconds: number;
+  workoutsDelta: number;
+  volumeDeltaKg: number;
+  volumeDeltaPercent: number;
+  durationDeltaSeconds: number;
+  highlights: string[];
+}
+
+export type NavigationTab = 'home' | 'plan' | 'exercises' | 'evolution' | 'cardio' | 'profile';
+
+export type EvolutionTimeRange = '7d' | '30d' | '90d' | '6m' | '12m' | 'all';
+
+export interface BodyMeasurementItem {
+  id: string;
+  date: string; // ISO date string: YYYY-MM-DD or full ISO
+  weightKg?: number;
+  waistCm?: number;
+  abdomenCm?: number;
+  chestCm?: number;
+  armRightCm?: number;
+  armLeftCm?: number;
+  thighRightCm?: number;
+  thighLeftCm?: number;
+  calfRightCm?: number;
+  calfLeftCm?: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export type EquipmentCategory =
   | 'chest'
@@ -139,6 +196,8 @@ export interface ExerciseItem {
    * nenhum equipamento obrigatório selecionado na academia.
    */
   canExecuteWithoutEquipment?: boolean;
+  isCustom?: boolean;
+  photoUrl?: string;
   shortDescription: string;
   initialPosition: string;
   executionSteps: string[];
@@ -188,9 +247,30 @@ export interface WorkoutPlanExercise {
   instructorNotes?: string;
 }
 
+export interface WorkoutSessionSetLog {
+  setNumber: number;
+  prescribedReps: string;
+  prescribedWeightKg?: number;
+  actualReps: number;
+  actualWeightKg: number;
+  completed: boolean;
+  completedAt?: string;
+}
+
+export interface WorkoutSessionExerciseLog {
+  exerciseId: string;
+  exerciseName: string;
+  order: number;
+  skipped?: boolean;
+  skipReason?: string;
+  notes?: string;
+  sets: WorkoutSessionSetLog[];
+}
+
 export interface WorkoutSessionItem {
   id: string;
   workoutPlanId: string;
+  planName?: string;
   divisionId: string;
   divisionName: string;
   startTime: string;
@@ -200,6 +280,13 @@ export interface WorkoutSessionItem {
   exercisesCompleted: number;
   totalVolumeKg?: number;
   notes?: string;
+  exerciseLogs?: WorkoutSessionExerciseLog[];
+  // Rastreamento temporal de alta precisão (pausa, retomada e persistência)
+  isPaused?: boolean;
+  pausedAt?: string;
+  lastResumedAt?: string;
+  elapsedActiveSeconds?: number;
+  pausedTotalSeconds?: number;
 }
 
 export interface CardioSessionItem {

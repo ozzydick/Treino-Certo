@@ -11,19 +11,21 @@ import {
   ChevronRight,
   Dumbbell,
   ExternalLink,
+  Plus,
   Search,
+  Sparkles,
   X,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext';
 import { useEquipments } from '../../context/EquipmentsContext';
+import { useCustomExercises } from '../../context/CustomExercisesContext';
 import {
   ExerciseItem,
   MUSCLE_GROUP_LABELS,
   MuscleGroupId,
 } from '../../types';
 import {
-  DEFAULT_EXERCISES_CATALOG,
   ORDERED_MUSCLE_GROUPS,
   filterExercisesCatalog,
   formatEquipmentAlternativesSummary,
@@ -33,6 +35,7 @@ import {
 } from '../../constants/exercisesCatalog';
 import { ExerciseIllustration } from './ExerciseIllustration';
 import { ExerciseDetailModal } from './ExerciseDetailModal';
+import { CustomExerciseModal } from './CustomExerciseModal';
 
 interface ExerciseLibraryViewProps {
   onOpenEquipments?: () => void;
@@ -51,40 +54,51 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
     linkCustomEquipmentToExercise,
     unlinkCustomEquipmentFromExercise,
   } = useEquipments();
+  const { allExercises, customExercises } = useCustomExercises();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<'all' | MuscleGroupId>('all');
   const [onlyAvailableInGym, setOnlyAvailableInGym] = useState(false);
+  const [onlyCustom, setOnlyCustom] = useState(false);
+  
   const [selectedExercise, setSelectedExercise] = useState<ExerciseItem | null>(null);
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [exerciseToEdit, setExerciseToEdit] = useState<ExerciseItem | null>(null);
 
   const countsByGroup = useMemo(
-    () => getExerciseCountByMuscleGroup(DEFAULT_EXERCISES_CATALOG),
-    []
+    () => getExerciseCountByMuscleGroup(allExercises),
+    [allExercises]
   );
 
-  const filteredExercises = useMemo(
-    () =>
-      filterExercisesCatalog(DEFAULT_EXERCISES_CATALOG, {
-        searchQuery,
-        muscleGroup: selectedMuscleGroup,
-        onlyAvailableInGym,
-        selectedEquipmentIds: selectedIds,
-        customEquipments,
-        explicitCustomCompatibilityMap,
-      }),
-    [
+  const filteredExercises = useMemo(() => {
+    let list = filterExercisesCatalog(allExercises, {
       searchQuery,
-      selectedMuscleGroup,
+      muscleGroup: selectedMuscleGroup,
       onlyAvailableInGym,
-      selectedIds,
+      selectedEquipmentIds: selectedIds,
       customEquipments,
       explicitCustomCompatibilityMap,
-    ]
-  );
+    });
+
+    if (onlyCustom) {
+      list = list.filter((ex) => Boolean(ex.isCustom));
+    }
+
+    return list;
+  }, [
+    allExercises,
+    searchQuery,
+    selectedMuscleGroup,
+    onlyAvailableInGym,
+    onlyCustom,
+    selectedIds,
+    customEquipments,
+    explicitCustomCompatibilityMap,
+  ]);
 
   const compatibleInCatalogCount = useMemo(
     () =>
-      DEFAULT_EXERCISES_CATALOG.filter((ex) =>
+      allExercises.filter((ex) =>
         isExerciseCompatibleWithGym(
           ex,
           selectedIds,
@@ -92,7 +106,7 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
           customEquipments
         )
       ).length,
-    [selectedIds, explicitCustomCompatibilityMap, customEquipments]
+    [allExercises, selectedIds, explicitCustomCompatibilityMap, customEquipments]
   );
 
   return (
@@ -104,72 +118,102 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
             <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
               <span>Consulta Técnica Offline</span>
               <span aria-hidden="true">·</span>
-              <span>{DEFAULT_EXERCISES_CATALOG.length} exercícios catalogados</span>
+              <span>{allExercises.length} exercícios ({customExercises.length} personalizados)</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2 mt-0.5">
               <BookOpen className="w-7 h-7 shrink-0" style={{ color: themeConfig.primaryHex }} />
               <span>Biblioteca de Exercícios</span>
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              Instruções biomecânicas passo a passo e compatibilidade com os equipamentos da sua academia para apoiar a ficha do seu instrutor.
+              Instruções biomecânicas passo a passo e cadastro de exercícios personalizados.
             </p>
           </div>
 
-          {onOpenEquipments && (
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
             <button
               type="button"
-              onClick={onOpenEquipments}
-              className="min-h-[44px] px-3.5 py-2 rounded-xl bg-surface-card border border-white/10 hover:border-white/25 text-xs font-semibold text-slate-200 hover:text-white transition flex items-center gap-2 shrink-0 self-start sm:self-auto whitespace-nowrap"
+              onClick={() => {
+                setExerciseToEdit(null);
+                setIsCustomModalOpen(true);
+              }}
+              className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold text-black transition flex items-center gap-2 shadow-lg"
+              style={{ backgroundColor: themeConfig.primaryHex }}
             >
-              <Dumbbell className="w-4 h-4" style={{ color: themeConfig.primaryHex }} />
-              <span>
-                Minha Academia ({totalSelectedCount})
-              </span>
+              <Plus className="w-4 h-4 text-black stroke-[3]" />
+              <span>Novo Exercício</span>
             </button>
-          )}
+
+            {onOpenEquipments && (
+              <button
+                type="button"
+                onClick={onOpenEquipments}
+                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-surface-card border border-white/10 hover:border-white/25 text-xs font-semibold text-slate-200 hover:text-white transition flex items-center gap-2 whitespace-nowrap"
+              >
+                <Dumbbell className="w-4 h-4" style={{ color: themeConfig.primaryHex }} />
+                <span>
+                  Academia ({totalSelectedCount})
+                </span>
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Gym Compatibility Filter Bar */}
+        {/* Gym Compatibility & Custom Filter Bar */}
         <div className="p-3.5 rounded-2xl bg-surface-card border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 text-xs text-slate-300">
             <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
             <span>
               <strong className="text-white tabular-nums">{compatibleInCatalogCount}</strong> de{' '}
-              <strong className="text-white tabular-nums">
-                {DEFAULT_EXERCISES_CATALOG.length}
-              </strong>{' '}
-              exercícios disponíveis{' '}
+              <strong className="text-white tabular-nums">{allExercises.length}</strong> exercícios disponíveis{' '}
               {totalSelectedCount > 0 ? (
                 <>
                   em{' '}
                   {profile.gymName && profile.gymName.trim()
                     ? profile.gymName
-                    : 'sua academia conforme os equipamentos selecionados'}
+                    : 'sua academia'}
                 </>
               ) : (
-                '(apenas livres no solo — selecione os aparelhos da sua academia para ampliar)'
+                '(apenas livres no solo)'
               )}
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setOnlyAvailableInGym((prev) => !prev)}
-            aria-pressed={onlyAvailableInGym}
-            className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 border ${
-              onlyAvailableInGym
-                ? 'text-black border-transparent font-bold'
-                : 'bg-surface-elevated border-white/10 text-slate-300 hover:text-white'
-            }`}
-            style={
-              onlyAvailableInGym ? { backgroundColor: themeConfig.primaryHex } : undefined
-            }
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>
-              {onlyAvailableInGym ? 'Filtrando: Minha Academia' : 'Filtrar por Minha Academia'}
-            </span>
-          </button>
+          <div className="flex items-center gap-2">
+            {customExercises.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setOnlyCustom((prev) => !prev)}
+                aria-pressed={onlyCustom}
+                className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1 border ${
+                  onlyCustom
+                    ? 'bg-purple-500/30 border-purple-500/50 text-purple-200 font-bold'
+                    : 'bg-surface-elevated border-white/10 text-slate-300 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <span>Meus Exercícios ({customExercises.length})</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setOnlyAvailableInGym((prev) => !prev)}
+              aria-pressed={onlyAvailableInGym}
+              className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 border ${
+                onlyAvailableInGym
+                  ? 'text-black border-transparent font-bold'
+                  : 'bg-surface-elevated border-white/10 text-slate-300 hover:text-white'
+              }`}
+              style={
+                onlyAvailableInGym ? { backgroundColor: themeConfig.primaryHex } : undefined
+              }
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>
+                {onlyAvailableInGym ? 'Filtrando: Academia' : 'Minha Academia'}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -180,7 +224,7 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Pesquisar exercício pelo nome (ex: supino, agachamento, puxada, prancha...)"
+          placeholder="Pesquisar exercício pelo nome (ex: supino, agachamento, rosca...)"
           aria-label="Pesquisar pelo nome do exercício"
           className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-surface-card border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-white/30 transition"
         />
@@ -218,7 +262,7 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
               : undefined
           }
         >
-          Todos ({DEFAULT_EXERCISES_CATALOG.length})
+          Todos ({allExercises.length})
         </button>
 
         {ORDERED_MUSCLE_GROUPS.map((groupKey) => {
@@ -258,41 +302,35 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
               Nenhum exercício encontrado para os filtros atuais
             </h2>
             <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-              {onlyAvailableInGym && totalSelectedCount === 0
-                ? 'Você ativou o filtro da sua academia sem equipamentos selecionados, exibindo apenas exercícios livres de solo.'
-                : 'Tente buscar por outro termo ou alterar o filtro de grupo muscular.'}
+              Tente buscar por outro termo, limpar o filtro de busca ou criar um novo exercício personalizado.
             </p>
           </div>
 
           <div className="pt-2 flex flex-wrap justify-center gap-2">
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="px-3.5 py-2 rounded-xl bg-surface-elevated border border-white/10 text-xs font-semibold text-slate-200 hover:text-white"
-              >
-                Limpar pesquisa
-              </button>
-            )}
-            {selectedMuscleGroup !== 'all' && (
-              <button
-                type="button"
-                onClick={() => setSelectedMuscleGroup('all')}
-                className="px-3.5 py-2 rounded-xl bg-surface-elevated border border-white/10 text-xs font-semibold text-slate-200 hover:text-white"
-              >
-                Mostrar todos os grupos
-              </button>
-            )}
-            {onlyAvailableInGym && (
-              <button
-                type="button"
-                onClick={() => setOnlyAvailableInGym(false)}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold text-black"
-                style={{ backgroundColor: themeConfig.primaryHex }}
-              >
-                Remover filtro da academia
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedMuscleGroup('all');
+                setOnlyAvailableInGym(false);
+                setOnlyCustom(false);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-surface-elevated border border-white/10 text-xs font-semibold text-slate-200 hover:text-white"
+            >
+              Limpar filtros
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setExerciseToEdit(null);
+                setIsCustomModalOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold text-black"
+              style={{ backgroundColor: themeConfig.primaryHex }}
+            >
+              + Criar Novo Exercício
+            </button>
           </div>
         </div>
       ) : (
@@ -321,7 +359,7 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
                 key={exercise.id}
                 type="button"
                 onClick={() => setSelectedExercise(exercise)}
-                className="w-full text-left p-3.5 rounded-2xl bg-surface-card border border-white/5 hover:border-white/20 transition flex items-center justify-between gap-3.5 group"
+                className="w-full text-left p-3.5 rounded-2xl bg-surface-card border border-white/5 hover:border-white/20 transition flex items-center justify-between gap-3.5 group relative overflow-hidden"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   {/* Miniatura Demonstrativa */}
@@ -330,20 +368,28 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
                       exerciseId={exercise.id}
                       name={exercise.name}
                       muscleGroup={exercise.primaryMuscleGroup}
+                      photoUrl={exercise.externalVideoUrl?.startsWith('data:image/') ? exercise.externalVideoUrl : undefined}
                       size="sm"
                       className="w-full h-full"
                     />
                   </div>
 
-                  {/* Dados Principais: Nome, Grupo Muscular e Equipamento Compatível */}
+                  {/* Dados Principais: Nome, Grupo Muscular, Personalizado e Equipamento */}
                   <div className="min-w-0 space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
                       <span
                         className="font-semibold"
                         style={{ color: themeConfig.primaryHex }}
                       >
                         {primaryLabel}
                       </span>
+
+                      {exercise.isCustom && (
+                        <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-bold">
+                          Personalizado
+                        </span>
+                      )}
+
                       {availableInGym && (
                         <>
                           <span aria-hidden="true">·</span>
@@ -352,6 +398,7 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
                           </span>
                         </>
                       )}
+
                       {hasValidatedVideo && (
                         <>
                           <span aria-hidden="true">·</span>
@@ -394,6 +441,20 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
         onLinkCustomEquipment={linkCustomEquipmentToExercise}
         onUnlinkCustomEquipment={unlinkCustomEquipmentFromExercise}
         onOpenEquipments={onOpenEquipments}
+        onEditCustomExercise={(exToEdit) => {
+          setExerciseToEdit(exToEdit);
+          setIsCustomModalOpen(true);
+        }}
+      />
+
+      {/* Modal de Criar / Editar Exercício Personalizado */}
+      <CustomExerciseModal
+        isOpen={isCustomModalOpen}
+        onClose={() => {
+          setIsCustomModalOpen(false);
+          setExerciseToEdit(null);
+        }}
+        exerciseToEdit={exerciseToEdit}
       />
     </div>
   );

@@ -9,7 +9,8 @@ import { MUSCLE_GROUP_LABELS, MuscleGroupId } from '../../types';
 
 export interface ExerciseIllustrationProps {
   exerciseId: string;
-  name: string;
+  name?: string;
+  exerciseName?: string;
   muscleGroup: MuscleGroupId;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -673,32 +674,70 @@ export const REALISTIC_3D_EXERCISE_IMAGES: Record<string, string> = {
   ex_panturrilhas_sentado_maquina: '/images/exercises/ex_panturrilhas_sentado_maquina.webp',
   ex_panturrilhas_leg_press: '/images/exercises/ex_panturrilhas_leg_press.webp',
   ex_panturrilhas_unilateral_em_pe_maquina: '/images/exercises/ex_panturrilhas_unilateral_em_pe_maquina.webp',
+  ex_ombros_desenvolvimento_halteres: '/images/exercises/ex_ombros_desenvolvimento_halteres.webp',
+  ex_ombros_desenvolvimento_maquina: '/images/exercises/ex_ombros_desenvolvimento_maquina.webp',
+  ex_ombros_elevacao_lateral_halteres: '/images/exercises/ex_ombros_elevacao_lateral_halteres.webp',
+  ex_ombros_elevacao_lateral_maquina: '/images/exercises/ex_ombros_elevacao_lateral_maquina.webp',
+  ex_biceps_rosca_direta_barra: '/images/exercises/ex_biceps_rosca_direta_barra.webp',
+  ex_biceps_rosca_scott: '/images/exercises/ex_biceps_rosca_scott.webp',
+  ex_biceps_rosca_alternada_halteres: '/images/exercises/ex_biceps_rosca_alternada_halteres.webp',
+  ex_biceps_rosca_martelo_halteres: '/images/exercises/ex_biceps_rosca_martelo_halteres.webp',
+  ex_biceps_rosca_concentrada_halter: '/images/exercises/ex_biceps_rosca_concentrada_halter.webp',
+  ex_triceps_pulley_barra: '/images/exercises/ex_triceps_pulley_barra.webp',
+  ex_triceps_testa_barra_w: '/images/exercises/ex_triceps_testa_barra_w.webp',
+  ex_triceps_maquina_sentado: '/images/exercises/ex_triceps_maquina_sentado.webp',
+  ex_triceps_corda_polia: '/images/exercises/ex_triceps_corda_polia.webp',
+  ex_triceps_coice_halter: '/images/exercises/ex_triceps_coice_halter.webp',
+  ex_quadriceps_agachamento_bulgaro: '/images/exercises/ex_quadriceps_agachamento_bulgaro.webp',
+  ex_quadriceps_passada_afundo_halteres: '/images/exercises/ex_quadriceps_passada_afundo_halteres.webp',
+  ex_panturrilhas_em_pe_degrau_halteres: '/images/exercises/ex_panturrilhas_em_pe_degrau_halteres.webp',
+  ex_abdomen_prancha_isometrica: '/images/exercises/ex_abdomen_prancha_isometrica.webp',
+  ex_abdomen_supra_solo: '/images/exercises/ex_abdomen_supra_solo.webp',
+  ex_abdomen_infra_barra_fixa: '/images/exercises/ex_abdomen_infra_barra_fixa.webp',
+  ex_abdomen_infra_paralelas: '/images/exercises/ex_abdomen_infra_paralelas.webp',
+  ex_abdomen_remador_solo: '/images/exercises/ex_abdomen_remador_solo.webp',
+  ex_corpo_inteiro_kettlebell_swing: '/images/exercises/ex_corpo_inteiro_kettlebell_swing.webp',
+  ex_corpo_inteiro_agachamento_desenvolvimento_halteres: '/images/exercises/ex_corpo_inteiro_agachamento_desenvolvimento_halteres.webp',
+  ex_corpo_inteiro_flexao_bracos_solo: '/images/exercises/ex_corpo_inteiro_flexao_bracos_solo.webp',
 };
+
+export interface ExerciseIllustrationProps {
+  exerciseId: string;
+  name?: string;
+  exerciseName?: string;
+  muscleGroup: MuscleGroupId;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  photoUrl?: string;
+}
 
 export const ExerciseIllustration: React.FC<ExerciseIllustrationProps> = ({
   exerciseId,
   name,
+  exerciseName,
   muscleGroup,
   size = 'md',
   className = '',
+  photoUrl,
 }) => {
-  const realisticImageSrc = REALISTIC_3D_EXERCISE_IMAGES[exerciseId];
+  const realisticImageSrc = photoUrl || REALISTIC_3D_EXERCISE_IMAGES[exerciseId];
+  const displayName = exerciseName || name || exerciseId;
 
   return (
     <div
       className={`relative overflow-hidden bg-gradient-to-b from-surface-elevated via-surface-card to-surface-dark flex items-center justify-center rounded-xl border border-white/10 ${className}`}
-      title={name}
+      title={displayName}
     >
       {realisticImageSrc ? (
         <img
           src={realisticImageSrc}
-          alt={`Demonstração 3D realista: ${name}, posições inicial e final`}
+          alt={`Demonstração: ${displayName}`}
           className="w-full h-full object-contain object-center p-1"
           loading="lazy"
           decoding="async"
         />
       ) : (
-        <StandardExerciseSvg id={exerciseId} name={name} muscleGroup={muscleGroup} size={size} />
+        <StandardExerciseSvg id={exerciseId} name={displayName} muscleGroup={muscleGroup} size={size} />
       )}
     </div>
   );

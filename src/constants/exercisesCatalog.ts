@@ -984,9 +984,82 @@ export const DEFAULT_EXERCISES_CATALOG: readonly ExerciseItem[] = [
       'Mantenha os punhos alinhados sem dobrá-los para trás.',
     ],
   },
+  {
+    id: 'ex_biceps_rosca_martelo_halteres',
+    name: 'Rosca martelo com halteres',
+    primaryMuscleGroup: 'biceps',
+    secondaryMuscleGroups: [],
+    compatibleEquipmentIds: [
+      'std_general_halteres',
+      'std_general_bancos_regulaveis',
+      'std_general_bancos_retos',
+    ],
+    equipmentAlternatives: [
+      ['std_general_halteres'],
+      ['std_general_halteres', 'std_general_bancos_regulaveis'],
+      ['std_general_halteres', 'std_general_bancos_retos'],
+    ],
+    shortDescription:
+      'Flexão de cotovelos com pegada neutra (palmas voltadas para dentro), enfatizando o braquial, braquiorradial e cabeça longa do bíceps.',
+    initialPosition:
+      'Em pé ou sentado, com o tronco ereto e os joelhos levemente flexionados, segure um halter em cada mão com pegada neutra (palmas voltadas uma para a outra).',
+    executionSteps: [
+      'Mantendo os cotovelos fixos ao lado do tronco, flexione os braços subindo os halteres na vertical.',
+      'Eleve os pesos até a altura dos ombros mantendo os punhos firmes e neutros durante todo o trajeto.',
+      'Contraia o bíceps e antebraço na posição superior por um segundo.',
+      'Desça os halteres de forma cadenciada até a extensão quase completa dos cotovelos.',
+    ],
+    breathingGuide:
+      'Expire ao elevar os halteres e inspire durante o retorno controlado à posição inicial.',
+    commonMistakes: [
+      'Balançar o tronco para trás criando balanço e tirando o foco dos braços.',
+      'Mover os cotovelos para a frente durante a subida.',
+      'Rotacionar os punhos no meio do movimento (perder a pegada neutra).',
+    ],
+    safetyTips: [
+      'Mantenha os joelhos sutilmente destravados para absorver a tensão na coluna lombar.',
+      'Se usar cargas altas, execute sentado com encosto apoiado a 90°.',
+    ],
+  },
+  {
+    id: 'ex_biceps_rosca_concentrada_halter',
+    name: 'Rosca concentrada unilateral com halter',
+    primaryMuscleGroup: 'biceps',
+    secondaryMuscleGroups: [],
+    compatibleEquipmentIds: [
+      'std_general_halteres',
+      'std_general_bancos_retos',
+      'std_general_bancos_regulaveis',
+    ],
+    equipmentAlternatives: [
+      ['std_general_halteres', 'std_general_bancos_retos'],
+      ['std_general_halteres', 'std_general_bancos_regulaveis'],
+    ],
+    shortDescription:
+      'Exercício isolador unilateral realizado sentado com apoio do cotovelo na parte interna da coxa, proporcionando pico de contração no bíceps.',
+    initialPosition:
+      'Sente-se na extremidade do banco com as pernas afastadas. Segure o halter com uma das mãos, apoie a parte posterior do tríceps na parte interna da coxa correspondente e incline o tronco à frente.',
+    executionSteps: [
+      'Mantenha o braço estendido apontando o halter em direção ao solo.',
+      'Flexione o cotovelo de forma estritamente isolada, trazendo o halter em direção ao peitoral.',
+      'Aperte o bíceps no ponto de máxima flexão por um segundo sem mover a coxa ou o tronco.',
+      'Baixe o peso devagar até estender o cotovelo quase completamente.',
+    ],
+    breathingGuide:
+      'Expire ao realizar a flexão do braço e inspire no retorno lento ao ponto inicial.',
+    commonMistakes: [
+      'Usar o tronco ou o ombro para puxar o peso para cima.',
+      'Deslizar o cotovelo para fora do apoio na coxa.',
+      'Largar o peso rapidamente na descida.',
+    ],
+    safetyTips: [
+      'Concentre a força exclusivamente no bíceps; se precisar de impulso, reduza a carga do halter.',
+      'Faça o mesmo número de repetições com ambos os braços.',
+    ],
+  },
 
   // ===========================================================================
-  // 5. TRÍCEPS (3 exercícios)
+  // 5. TRÍCEPS (5 exercícios)
   // ===========================================================================
   {
     id: 'ex_triceps_pulley_barra',
@@ -1096,9 +1169,80 @@ export const DEFAULT_EXERCISES_CATALOG: readonly ExerciseItem[] = [
       'Evite hiperestender os cotovelos de forma brusca.',
     ],
   },
+  {
+    id: 'ex_triceps_corda_polia',
+    name: 'Tríceps na polia alta com corda',
+    primaryMuscleGroup: 'triceps',
+    secondaryMuscleGroups: ['abdomen_core'],
+    compatibleEquipmentIds: [
+      'std_arms_polia_triceps',
+      'std_arms_barras_puxadores_polia',
+      'std_general_polias_ajustaveis',
+    ],
+    equipmentAlternatives: [
+      ['std_arms_polia_triceps'],
+      ['std_general_polias_ajustaveis', 'std_arms_barras_puxadores_polia'],
+    ],
+    shortDescription:
+      'Extensão de cotovelos na polia alta utilizando o puxador de corda, permitindo rotação e abertura final das mãos para máxima contração da cabeça lateral e longa do tríceps.',
+    initialPosition:
+      'Conecte o puxador de corda na polia alta. Segure a corda com pegada neutra e incline levemente o tronco à frente, mantendo os cotovelos colados às laterais das costelas.',
+    executionSteps: [
+      'Empurre a corda para baixo estendendo os cotovelos.',
+      'No final da descida, afaste as pontas da corda para fora rodando levemente os punhos para aumentar a contração do tríceps.',
+      'Mantenha a contração de pico por um instante.',
+      'Retorne de forma controlada permitindo que as mãos se aproximem novamente até a altura do tórax.',
+    ],
+    breathingGuide:
+      'Expire ao estender os braços para baixo e afastar a corda, e inspire ao retornar à Posição Inicial.',
+    commonMistakes: [
+      'Mover os cotovelos para a frente e para trás durante a extensão.',
+      'Flexionar excessivamente o punho para baixo no final do movimento.',
+      'Incurvar a coluna torácica ou usar o peso do corpo para empurrar.',
+    ],
+    safetyTips: [
+      'Mantenha os ombros abaixados e longe das orelhas.',
+      'O movimento deve ser focado estritamente na articulação do cotovelo.',
+    ],
+  },
+  {
+    id: 'ex_triceps_coice_halter',
+    name: 'Tríceps coice com halter no banco',
+    primaryMuscleGroup: 'triceps',
+    secondaryMuscleGroups: ['ombros'],
+    compatibleEquipmentIds: [
+      'std_general_halteres',
+      'std_general_bancos_retos',
+      'std_general_bancos_regulaveis',
+    ],
+    equipmentAlternatives: [
+      ['std_general_halteres', 'std_general_bancos_retos'],
+      ['std_general_halteres', 'std_general_bancos_regulaveis'],
+    ],
+    shortDescription:
+      'Extensão de cotovelo unilateral com o tronco inclinado e apoiado em banco reto, excelente para isolar a cabeça longa e medial do tríceps.',
+    initialPosition:
+      'Apoie o joelho e a mão do mesmo lado em um banco reto, mantendo a coluna paralela ao solo. Segure o halter com a outra mão e eleve o cotovelo até que o braço fique paralelo ao tronco.',
+    executionSteps: [
+      'Fixe o cotovelo ao lado do tronco e estenda o antebraço para trás até que o braço fique totalmente reto.',
+      'Sustente a posição final paralela ao solo por um segundo sentindo a contração do tríceps.',
+      'Retorne o antebraço a 90° de forma cadenciada sem deixar o cotovelo cair.',
+    ],
+    breathingGuide:
+      'Expire ao estender o braço para trás e inspire ao retornar o antebraço.',
+    commonMistakes: [
+      'Deixar o cotovelo cair em direção ao chão a cada repetição.',
+      'Rodar o tronco para cima para ajudar a subir a carga.',
+      'Balançar o braço usando o impulso do ombro.',
+    ],
+    safetyTips: [
+      'Mantenha o pescoço em alinhamento neutro com a coluna olhando sutilmente para o banco.',
+      'Selecione uma carga que permita a extensão completa do cotovelo no topo.',
+    ],
+  },
 
   // ===========================================================================
-  // 6. QUADRÍCEPS (4 exercícios)
+  // 6. QUADRÍCEPS (6 exercícios)
   // ===========================================================================
   {
     id: 'ex_quadriceps_agachamento_livre',
@@ -1246,6 +1390,75 @@ export const DEFAULT_EXERCISES_CATALOG: readonly ExerciseItem[] = [
     safetyTips: [
       'Acione as travas laterais de segurança com firmeza ao concluir a última repetição antes de sair do aparelho.',
       'Nunca trave os joelhos em hiperextensão.',
+    ],
+  },
+  {
+    id: 'ex_quadriceps_agachamento_bulgaro',
+    name: 'Agachamento búlgaro com halteres',
+    primaryMuscleGroup: 'quadriceps',
+    secondaryMuscleGroups: ['gluteos', 'posterior_coxa'],
+    compatibleEquipmentIds: [
+      'std_general_halteres',
+      'std_general_bancos_retos',
+      'std_general_bancos_regulaveis',
+    ],
+    equipmentAlternatives: [
+      ['std_general_halteres', 'std_general_bancos_retos'],
+      ['std_general_halteres', 'std_general_bancos_regulaveis'],
+    ],
+    shortDescription:
+      'Agachamento unipedal avançado com a perna traseira elevada em um banco, excelente para hipertrofia de quadríceps e glúteos com alta estabilização.',
+    initialPosition:
+      'Em pé de costas para um banco reto, apoie o peito do pé traseiro no acolchoado. Dê um passo à frente com a perna de apoio e segure um halter em cada mão.',
+    executionSteps: [
+      'Flexione o joelho da perna da frente descendo o quadril na vertical até que a coxa fique paralela ao solo.',
+      'Mantenha o joelho da frente alinhado com a ponta do pé sem ultrapassá-la excessivamente.',
+      'Empurre o solo com o calcanhar da frente retornando à posição inicial.',
+      'Conclua a série com uma perna antes de alternar o lado.',
+    ],
+    breathingGuide:
+      'Inspire ao descer no agachamento e expire ao empurrar o solo para subir.',
+    commonMistakes: [
+      'Posicionar o pé da frente muito próximo do banco colidindo o joelho.',
+      'Projetar o joelho para dentro (valgo dinâmico).',
+      'Inclinar excessivamente o tronco para a frente.',
+    ],
+    safetyTips: [
+      'Inicie apenas com o peso do corpo para dominar o equilíbrio antes de adicionar halteres.',
+      'Mantenha o olhar fixo em um ponto à frente para preservar o equilíbrio postural.',
+    ],
+  },
+  {
+    id: 'ex_quadriceps_passada_afundo_halteres',
+    name: 'Passada (Afundo dinâmico com halteres)',
+    primaryMuscleGroup: 'quadriceps',
+    secondaryMuscleGroups: ['gluteos', 'posterior_coxa', 'panturrilhas'],
+    compatibleEquipmentIds: [
+      'std_general_halteres',
+    ],
+    equipmentAlternatives: [
+      ['std_general_halteres'],
+    ],
+    shortDescription:
+      'Exercício dinâmico de caminhada com passadas e flexão unilateral de joelhos, promovendo desenvolvimento funcional de quadríceps, glúteos e equilíbrio.',
+    initialPosition:
+      'Em pé no início do corredor com postura ereta, segure um halter em cada mão com os braços estendidos ao lado do corpo.',
+    executionSteps: [
+      'Dê um passo largo à frente com uma das pernas e flexione ambos os joelhos a cerca de 90°.',
+      'O joelho traseiro deve se aproximar do solo sem tocá-lo bruscamente.',
+      'Projete o corpo à frente empurrando com o pé da frente e dando o próximo passo com a outra perna.',
+      'Prossiga alternando as pernas continuamente.',
+    ],
+    breathingGuide:
+      'Inspire ao dar o passo e afundar os joelhos e expire ao subir e projetar o próximo passo.',
+    commonMistakes: [
+      'Dar passadas muito curtas sobrecarregando a articulação patelar.',
+      'Perder o equilíbrio e pender o tronco para as laterais.',
+      'Bater o joelho traseiro com força no chão.',
+    ],
+    safetyTips: [
+      'Mantenha o abdômen contraído durante todo o percurso da caminhada.',
+      'Garanta um corredor livre de obstáculos antes de começar.',
     ],
   },
 
@@ -1653,9 +1866,44 @@ export const DEFAULT_EXERCISES_CATALOG: readonly ExerciseItem[] = [
       'Apoie os dois pés firmemente na plataforma antes de flexionar os joelhos para devolver as ombreiras ao suporte.',
     ],
   },
+  {
+    id: 'ex_panturrilhas_em_pe_degrau_halteres',
+    name: 'Panturrilha em pé no degrau com halteres',
+    primaryMuscleGroup: 'panturrilhas',
+    secondaryMuscleGroups: [],
+    compatibleEquipmentIds: [
+      'std_general_halteres',
+      'std_legs_panturrilha_em_pe',
+    ],
+    equipmentAlternatives: [
+      ['std_general_halteres'],
+      ['std_legs_panturrilha_em_pe'],
+    ],
+    shortDescription:
+      'Elevação de calcanhares em degrau ou bloco com pesos livres, proporcionando máxima amplitude de alongamento e contração do gastrocnêmio.',
+    initialPosition:
+      'Pise com a metade anterior dos pés sobre o degrau ou step, deixando os calcanhares livres. Segure um halter em cada mão com os braços estendidos ao lado do corpo e mantenha a postura ereta.',
+    executionSteps: [
+      'Baixe os calcanhares o máximo possível abaixo da linha do degrau, sentindo o alongamento da panturrilha.',
+      'Empurre o solo subindo na ponta dos pés o mais alto que puder.',
+      'Sustente a contração máxima por um segundo no topo.',
+      'Retorne desatando os calcanhares de forma cadenciada.',
+    ],
+    breathingGuide:
+      'Expire ao subir na ponta dos pés e inspire ao descer os calcanhares.',
+    commonMistakes: [
+      'Realizar repetições curtas sem aproveitar a amplitude total do degrau.',
+      'Flexionar os joelhos durante a subida usando o quadríceps.',
+      'Balançar os braços e halteres para dar impulso.',
+    ],
+    safetyTips: [
+      'Se necessário, faça a versão unilateral segurando o suporte com uma das mãos para estabilidade.',
+      'Mantenha o tornozelo alinhado verticalmente sem deixar o pé virar para dentro ou para fora.',
+    ],
+  },
 
   // ===========================================================================
-  // 10. ABDÔMEN E CORE (3 exercícios)
+  // 10. ABDÔMEN E CORE (5 exercícios)
   // ===========================================================================
   {
     id: 'ex_abdomen_prancha_isometrica',
@@ -1756,6 +2004,70 @@ export const DEFAULT_EXERCISES_CATALOG: readonly ExerciseItem[] = [
     safetyTips: [
       'Inicie com os joelhos flexionados (elevação de joelhos) e progrida para pernas estendidas conforme orientação do instrutor.',
       'Ao finalizar, aguarde os pés pararem de oscilar antes de tocar o solo.',
+    ],
+  },
+  {
+    id: 'ex_abdomen_infra_paralelas',
+    name: 'Elevação de pernas nas paralelas (Captain Chair)',
+    primaryMuscleGroup: 'abdomen_core',
+    secondaryMuscleGroups: ['quadriceps'],
+    compatibleEquipmentIds: [
+      'std_back_barra_fixa',
+    ],
+    equipmentAlternatives: [
+      ['std_back_barra_fixa'],
+    ],
+    shortDescription:
+      'Exercício em estação paralela com apoio de antebraços para fortalecimento focado na porção infra do reto abdominal e flexores do quadril.',
+    initialPosition:
+      'Apoie os antebraços nos acolchoados da estação paralela e segure as manoplas. Mantenha as costas firmemente encostadas no suporte e as pernas estendidas suspensas.',
+    executionSteps: [
+      'Eleve as pernas flexionando ligeiramente os joelhos até que as coxas fiquem no mínimo paralelas ao solo ou próximas do tórax.',
+      'Enrole sutilmente o quadril para cima no topo para recrutar totalmente a musculatura abdominal.',
+      'Pause brevemente no ponto mais alto e desça as pernas devagar até a posição vertical sem balançar o corpo.',
+    ],
+    breathingGuide:
+      'Expire ao elevar as pernas em direção ao peito e inspire ao retornar à Posição Inicial.',
+    commonMistakes: [
+      'Balançar o tronco ou utilizar o impulso das pernas (gangorra).',
+      'Desencostar a lombar do acolchoados durante a subida.',
+      'Descer as pernas despencando sem controle.',
+    ],
+    safetyTips: [
+      'Mantenha os ombros abaixados sem afundar o pescoço na estrutura.',
+      'Se sentir desconforto na lombar, execute com os joelhos mais flexionados.',
+    ],
+  },
+  {
+    id: 'ex_abdomen_remador_solo',
+    name: 'Abdominal remador no solo',
+    primaryMuscleGroup: 'abdomen_core',
+    secondaryMuscleGroups: ['quadriceps'],
+    compatibleEquipmentIds: [
+      'std_general_colchonetes',
+    ],
+    equipmentAlternatives: [
+      ['std_general_colchonetes'],
+    ],
+    shortDescription:
+      'Exercício dinâmico e completo que combina a flexão simultânea do tronco e dos joelhos no solo, recrutando todo o reto abdominal.',
+    initialPosition:
+      'Deite-se de costas no colchonete com os braços e pernas totalmente estendidos ao longo do corpo.',
+    executionSteps: [
+      'Flexione o tronco e os joelhos simultaneamente trazendo o tórax e os joelhos em direção ao centro do corpo.',
+      'Abraçe os joelhos ou aproxime os braços dos tornozelos no ponto de contração máxima.',
+      'Retorne de forma controlada estendendo o tronco e as pernas de volta ao solo sem desabar.',
+    ],
+    breathingGuide:
+      'Expire ao sentar e abraçar os joelhos e inspire ao deitar novamente estendendo o corpo.',
+    commonMistakes: [
+      'Puxar o pescoço com as mãos provocando tensão cervical.',
+      'Bater as costas com força no solo no retorno.',
+      'Uso de impulso descontrolado dos braços.',
+    ],
+    safetyTips: [
+      'Execute sobre um colchonete para proteger a coluna vertebral.',
+      'Mantenha a musculatura do core ativada durante todo o percurso.',
     ],
   },
 

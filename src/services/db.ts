@@ -4,7 +4,16 @@
  */
 
 import { DEFAULT_THEME_ID, THEMES } from '../constants/themes';
-import { FitnessGoal, GymEquipmentItem, ThemeId, UserPreferences, UserProfile } from '../types';
+import {
+  FitnessGoal,
+  GymEquipmentItem,
+  ThemeId,
+  UserPreferences,
+  UserProfile,
+  WorkoutPlanItem,
+  WorkoutSessionItem,
+  BodyMeasurementItem,
+} from '../types';
 import { MediaDB, mediaDB } from './mediaDb';
 
 // O identificador original 'fit_app_db' é rigorosamente mantido para assegurar
@@ -529,6 +538,322 @@ export class FitAppDB {
     });
   }
 
+  // --- Operações de Fichas de Treino (Checkpoint 04) ---
+  public async getWorkoutPlans(): Promise<WorkoutPlanItem[]> {
+    const db = await this.getDB();
+    return new Promise<WorkoutPlanItem[]>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_PLANS, 'readonly');
+      const store = tx.objectStore(STORES.WORKOUT_PLANS);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        resolve((req.result as WorkoutPlanItem[]) || []);
+      };
+      req.onerror = () => {
+        console.error('Erro ao buscar fichas de treino:', req.error);
+        reject(req.error);
+      };
+    });
+  }
+
+  public async getWorkoutPlan(id: string): Promise<WorkoutPlanItem | null> {
+    const db = await this.getDB();
+    return new Promise<WorkoutPlanItem | null>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_PLANS, 'readonly');
+      const store = tx.objectStore(STORES.WORKOUT_PLANS);
+      const req = store.get(id);
+      req.onsuccess = () => {
+        resolve((req.result as WorkoutPlanItem) || null);
+      };
+      req.onerror = () => {
+        console.error(`Erro ao buscar ficha de treino (${id}):`, req.error);
+        reject(req.error);
+      };
+    });
+  }
+
+  public async getActiveWorkoutPlan(): Promise<WorkoutPlanItem | null> {
+    const plans = await this.getWorkoutPlans();
+    if (plans.length === 0) return null;
+    const active = plans.find((p) => p.isActive);
+    return active || plans[0] || null;
+  }
+
+  public async saveWorkoutPlan(plan: WorkoutPlanItem): Promise<void> {
+    const db = await this.getDB();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_PLANS, 'readwrite');
+      const store = tx.objectStore(STORES.WORKOUT_PLANS);
+
+      if (plan.isActive) {
+        // Se esta ficha for ativa, desativa as demais para garantir unicidade
+        const getAllReq = store.getAll();
+        getAllReq.onsuccess = () => {
+          const allPlans = (getAllReq.result as WorkoutPlanItem[]) || [];
+          for (const other of allPlans) {
+            if (other.id !== plan.id && other.isActive) {
+              store.put({ ...other, isActive: false, updatedAt: new Date().toISOString() });
+            }
+          }
+          store.put(plan);
+        };
+        getAllReq.onerror = () => {
+          store.put(plan);
+        };
+      } else {
+        store.put(plan);
+      }
+
+      tx.oncomplete = () => {
+        resolve();
+      };
+      tx.onerror = () => {
+        console.error('Erro ao salvar ficha de treino:', tx.error);
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        reject(new Error('Transação de gravação de ficha abortada.'));
+      };
+    });
+  }
+
+  public async deleteWorkoutPlan(id: string): Promise<void> {
+    const db = await this.getDB();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_PLANS, 'readwrite');
+      const store = tx.objectStore(STORES.WORKOUT_PLANS);
+      store.delete(id);
+
+      tx.oncomplete = () => {
+        resolve();
+      };
+      tx.onerror = () => {
+        console.error(`Erro ao excluir ficha de treino (${id}):`, tx.error);
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        reject(new Error('Transação de exclusão de ficha abortada.'));
+      };
+    });
+  }
+
+  public async setActiveWorkoutPlan(id: string): Promise<void> {
+    const db = await this.getDB();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_PLANS, 'readwrite');
+      const store = tx.objectStore(STORES.WORKOUT_PLANS);
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const plans = (req.result as WorkoutPlanItem[]) || [];
+        for (const p of plans) {
+          const shouldBeActive = p.id === id;
+          if (p.isActive !== shouldBeActive) {
+            store.put({
+              ...p,
+              isActive: shouldBeActive,
+              updatedAt: new Date().toISOString(),
+            });
+          }
+        }
+      };
+
+      tx.oncomplete = () => {
+        resolve();
+      };
+      tx.onerror = () => {
+        console.error('Erro ao ativar ficha de treino:', tx.error);
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        reject(new Error('Transação de ativação de ficha abortada.'));
+      };
+    });
+  }
+
+  // --- Operações de Sessões de Treino Executadas (Checkpoint 04) ---
+  public async getWorkoutSessions(): Promise<WorkoutSessionItem[]> {
+    const db = await this.getDB();
+    return new Promise<WorkoutSessionItem[]>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_SESSIONS, 'readonly');
+      const store = tx.objectStore(STORES.WORKOUT_SESSIONS);
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const sessions = (req.result as WorkoutSessionItem[]) || [];
+        // Ordena por startTime decrescente (mais recente primeiro)
+        sessions.sort(
+          (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+        );
+        resolve(sessions);
+      };
+      req.onerror = () => {
+        console.error('Erro ao buscar sessões de treino:', req.error);
+        reject(req.error);
+      };
+    });
+  }
+
+  public async getWorkoutSession(id: string): Promise<WorkoutSessionItem | null> {
+    const db = await this.getDB();
+    return new Promise<WorkoutSessionItem | null>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_SESSIONS, 'readonly');
+      const store = tx.objectStore(STORES.WORKOUT_SESSIONS);
+      const req = store.get(id);
+
+      req.onsuccess = () => {
+        resolve((req.result as WorkoutSessionItem) || null);
+      };
+      req.onerror = () => {
+        console.error(`Erro ao buscar sessão de treino (${id}):`, req.error);
+        reject(req.error);
+      };
+    });
+  }
+
+  public async getActiveWorkoutSession(): Promise<WorkoutSessionItem | null> {
+    const db = await this.getDB();
+    return new Promise<WorkoutSessionItem | null>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_SESSIONS, 'readonly');
+      const store = tx.objectStore(STORES.WORKOUT_SESSIONS);
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const sessions = (req.result as WorkoutSessionItem[]) || [];
+        // Encontra a sessão não concluída mais recente
+        const uncompleted = sessions
+          .filter((s) => !s.isCompleted)
+          .sort(
+            (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+          );
+        resolve(uncompleted[0] || null);
+      };
+      req.onerror = () => {
+        console.error('Erro ao buscar sessão ativa:', req.error);
+        reject(req.error);
+      };
+    });
+  }
+
+  public async saveWorkoutSession(session: WorkoutSessionItem): Promise<void> {
+    const db = await this.getDB();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_SESSIONS, 'readwrite');
+      const store = tx.objectStore(STORES.WORKOUT_SESSIONS);
+      store.put(session);
+
+      tx.oncomplete = () => {
+        resolve();
+      };
+      tx.onerror = () => {
+        console.error('Erro ao salvar sessão de treino:', tx.error);
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        reject(new Error('Transação de gravação de sessão abortada.'));
+      };
+    });
+  }
+
+  public async deleteWorkoutSession(id: string): Promise<void> {
+    const db = await this.getDB();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.WORKOUT_SESSIONS, 'readwrite');
+      const store = tx.objectStore(STORES.WORKOUT_SESSIONS);
+      store.delete(id);
+
+      tx.oncomplete = () => {
+        resolve();
+      };
+      tx.onerror = () => {
+        console.error(`Erro ao excluir sessão de treino (${id}):`, tx.error);
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        reject(new Error('Transação de exclusão de sessão abortada.'));
+      };
+    });
+  }
+
+  // --- Operações de Avaliação Física e Medidas Corporais (Checkpoint 05) ---
+  public async getBodyMeasurements(): Promise<BodyMeasurementItem[]> {
+    const db = await this.getDB();
+    return new Promise<BodyMeasurementItem[]>((resolve, reject) => {
+      const tx = db.transaction(STORES.BODY_MEASUREMENTS, 'readonly');
+      const store = tx.objectStore(STORES.BODY_MEASUREMENTS);
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const measurements = (req.result as BodyMeasurementItem[]) || [];
+        // Ordena por data decrescente (mais recente primeiro)
+        measurements.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        resolve(measurements);
+      };
+      req.onerror = () => {
+        console.error('Erro ao buscar medidas corporais:', req.error);
+        reject(req.error);
+      };
+    });
+  }
+
+  public async getBodyMeasurement(id: string): Promise<BodyMeasurementItem | null> {
+    const db = await this.getDB();
+    return new Promise<BodyMeasurementItem | null>((resolve, reject) => {
+      const tx = db.transaction(STORES.BODY_MEASUREMENTS, 'readonly');
+      const store = tx.objectStore(STORES.BODY_MEASUREMENTS);
+      const req = store.get(id);
+
+      req.onsuccess = () => {
+        resolve((req.result as BodyMeasurementItem) || null);
+      };
+      req.onerror = () => {
+        console.error(`Erro ao buscar medida corporal (${id}):`, req.error);
+        reject(req.error);
+      };
+    });
+  }
+
+  public async saveBodyMeasurement(measurement: BodyMeasurementItem): Promise<void> {
+    const db = await this.getDB();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.BODY_MEASUREMENTS, 'readwrite');
+      const store = tx.objectStore(STORES.BODY_MEASUREMENTS);
+      store.put(measurement);
+
+      tx.oncomplete = () => {
+        resolve();
+      };
+      tx.onerror = () => {
+        console.error('Erro ao salvar avaliação física/medida corporal:', tx.error);
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        reject(new Error('Transação de gravação de avaliação física abortada.'));
+      };
+    });
+  }
+
+  public async deleteBodyMeasurement(id: string): Promise<void> {
+    const db = await this.getDB();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.BODY_MEASUREMENTS, 'readwrite');
+      const store = tx.objectStore(STORES.BODY_MEASUREMENTS);
+      store.delete(id);
+
+      tx.oncomplete = () => {
+        resolve();
+      };
+      tx.onerror = () => {
+        console.error(`Erro ao excluir avaliação física (${id}):`, tx.error);
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        reject(new Error('Transação de exclusão de avaliação física abortada.'));
+      };
+    });
+  }
+
   // --- Exportação Consistente em Transação Única Exclusivamente com as 7 Tabelas Oficiais ---
   public async exportAllData(): Promise<string> {
     const db = await this.getDB();
@@ -590,7 +915,7 @@ export class FitAppDB {
 
     const backupPayload: Record<string, unknown> = {
       app: 'TREINO CERTO',
-      version: '1.1',
+      version: '1.2',
       exportedAt: new Date().toISOString(),
       data,
     };

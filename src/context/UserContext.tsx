@@ -4,16 +4,29 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { DEFAULT_THEME_ID } from '../constants/themes';
 import { dbService } from '../services/db';
-import { UserProfile } from '../types';
+import { UserPreferences, UserProfile } from '../types';
 
 interface UserContextType {
   profile: UserProfile;
+  preferences: UserPreferences;
   isLoading: boolean;
   isProfileConfigured: boolean;
   saveProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  savePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
   reloadProfile: () => Promise<void>;
 }
+
+const DEFAULT_PREFERENCES: UserPreferences = {
+  id: 'current_preferences',
+  theme: DEFAULT_THEME_ID,
+  soundAlerts: true,
+  vibration: true,
+  restTimerDefaultSeconds: 60,
+  keepScreenAwake: true,
+  updatedAt: new Date().toISOString(),
+};
 
 // Initial clean state strictly without any fictitious or mock data
 const EMPTY_INITIAL_PROFILE: UserProfile = {
@@ -33,19 +46,25 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfile>(EMPTY_INITIAL_PROFILE);
+  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfileFromStorage = async () => {
     try {
-      const stored = await dbService.getProfile();
-      if (stored) {
-        setProfile(stored);
+      const [storedProfile, storedPrefs] = await Promise.all([
+        dbService.getProfile(),
+        dbService.getPreferences(),
+      ]);
+      if (storedProfile) {
+        setProfile(storedProfile);
       } else {
-        // App starts clean with empty initial profile
         setProfile(EMPTY_INITIAL_PROFILE);
       }
+      if (storedPrefs) {
+        setPreferences(storedPrefs);
+      }
     } catch (err) {
-      console.error('Falha ao carregar perfil:', err);
+      console.error('Falha ao carregar perfil/preferências:', err);
     } finally {
       setIsLoading(false);
     }
@@ -61,9 +80,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-    // Wait for real persistence confirmation before updating React state
     await dbService.saveProfile(updated);
     setProfile(updated);
+  };
+
+  const savePreferences = async (updates: Partial<UserPreferences>) => {
+    const updated = await dbService.savePreferences(updates);
+    setPreferences(updated);
   };
 
   const reloadProfile = async () => {
@@ -76,9 +99,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <UserContext.Provider
       value={{
         profile,
+        preferences,
         isLoading,
         isProfileConfigured,
         saveProfile,
+        savePreferences,
         reloadProfile,
       }}
     >

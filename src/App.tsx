@@ -16,6 +16,11 @@ import { ThemeLibraryModal } from './components/theme/ThemeLibraryModal';
 import { ThemeProvider } from './context/ThemeContext';
 import { UserProvider } from './context/UserContext';
 import { EquipmentsProvider } from './context/EquipmentsContext';
+import { CustomExercisesProvider } from './context/CustomExercisesContext';
+import { WorkoutProvider } from './context/WorkoutContext';
+import { EvolutionProvider } from './context/EvolutionContext';
+import { WorkoutPlanView } from './components/workout/WorkoutPlanView';
+import { EvolutionView } from './components/evolution/EvolutionView';
 import { NavigationTab } from './types';
 
 function MainApp() {
@@ -25,7 +30,7 @@ function MainApp() {
 
   const handleTabChange = (tab: NavigationTab) => {
     setActiveView('tabs');
-    setCurrentTab(tab);
+    setCurrentTab(tab === 'cardio' ? 'home' : tab);
   };
 
   return (
@@ -62,11 +67,9 @@ function MainApp() {
             )}
 
             {currentTab === 'plan' && (
-              <SectionPlaceholder
-                tab="plan"
-                onNavigate={handleTabChange}
-                onOpenThemeModal={() => setIsThemeModalOpen(true)}
+              <WorkoutPlanView
                 onOpenEquipments={() => setActiveView('my-gym')}
+                onNavigate={handleTabChange}
               />
             )}
 
@@ -76,19 +79,19 @@ function MainApp() {
               />
             )}
 
-            {currentTab === 'cardio' && (
-              <SectionPlaceholder
-                tab="cardio"
+            {currentTab === 'evolution' && (
+              <EvolutionView
                 onNavigate={handleTabChange}
-                onOpenThemeModal={() => setIsThemeModalOpen(true)}
                 onOpenEquipments={() => setActiveView('my-gym')}
               />
             )}
+
+            {/* Cardio module is non-homologated and removed from active navigation in CP07 */}
           </>
         )}
       </main>
 
-      {/* Fixed Bottom Navigation (5 tabs) */}
+      {/* Fixed Bottom Navigation */}
       <BottomNav
         currentTab={activeView === 'my-gym' ? 'home' : currentTab}
         onTabChange={handleTabChange}
@@ -108,7 +111,13 @@ export default function App() {
     <ThemeProvider>
       <UserProvider>
         <EquipmentsProvider>
-          <MainApp />
+          <CustomExercisesProvider>
+            <WorkoutProvider>
+              <EvolutionProvider>
+                <MainApp />
+              </EvolutionProvider>
+            </WorkoutProvider>
+          </CustomExercisesProvider>
         </EquipmentsProvider>
       </UserProvider>
     </ThemeProvider>

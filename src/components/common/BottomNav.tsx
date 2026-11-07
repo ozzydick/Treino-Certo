@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Home, ClipboardList, Dumbbell, Flame, User } from 'lucide-react';
+import { Home, ClipboardList, Dumbbell, TrendingUp, Flame, User } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { NavigationTab } from '../../types';
 
@@ -18,15 +18,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onTabChange })
 
   const navItems: { id: NavigationTab; label: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }[] = [
     { id: 'home', label: 'Início', icon: Home },
-    { id: 'plan', label: 'Minha ficha', icon: ClipboardList },
+    { id: 'plan', label: 'Ficha', icon: ClipboardList },
     { id: 'exercises', label: 'Exercícios', icon: Dumbbell },
-    { id: 'cardio', label: 'Cardio', icon: Flame },
+    { id: 'evolution', label: 'Evolução', icon: TrendingUp },
     { id: 'profile', label: 'Perfil', icon: User },
   ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0B0F12]/95 backdrop-blur-xl border-t border-white/8 safe-bottom">
-      <div className="max-w-md mx-auto grid grid-cols-5 px-1 py-1.5">
+      <div className="max-w-lg mx-auto grid grid-cols-5 px-1 py-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;

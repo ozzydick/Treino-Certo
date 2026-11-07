@@ -9,10 +9,14 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx scripts/test-checkpoint01.mjs && tsx scripts/test-checkpoint02.mjs && tsx scripts/test-checkpoint03.mjs",
+    "test": "tsx scripts/test-checkpoint01.mjs && tsx scripts/test-checkpoint02.mjs && tsx scripts/test-checkpoint03.mjs && tsx scripts/test-checkpoint04.mjs && tsx scripts/test-checkpoint05.mjs && tsx scripts/test-checkpoint06.mjs && tsx scripts/test-checkpoint07.mjs",
     "test:cp1": "tsx scripts/test-checkpoint01.mjs",
     "test:cp2": "tsx scripts/test-checkpoint02.mjs",
-    "test:cp3": "tsx scripts/test-checkpoint03.mjs"
+    "test:cp3": "tsx scripts/test-checkpoint03.mjs",
+    "test:cp4": "tsx scripts/test-checkpoint04.mjs",
+    "test:cp5": "tsx scripts/test-checkpoint05.mjs",
+    "test:cp6": "tsx scripts/test-checkpoint06.mjs",
+    "test:cp7": "tsx scripts/test-checkpoint07.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

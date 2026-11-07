@@ -25,6 +25,7 @@ import {
   Info,
   Dumbbell,
   ArrowRight,
+  Bell,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useUser } from '../../context/UserContext';
@@ -32,6 +33,7 @@ import { useEquipments } from '../../context/EquipmentsContext';
 import { dbService, BackupValidationResult } from '../../services/db';
 import { FitnessGoal, UserProfile } from '../../types';
 import { PWAInstallButton } from '../common/PWAInstallButton';
+import { GoalSettingsModal } from '../goals/GoalSettingsModal';
 
 interface Props {
   onOpenThemeModal: () => void;
@@ -54,6 +56,7 @@ export const ProfileView: React.FC<Props> = ({ onOpenThemeModal, onOpenEquipment
   const [pendingValidation, setPendingValidation] = useState<BackupValidationResult | null>(null);
   const [showConfirmRestoreModal, setShowConfirmRestoreModal] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -289,6 +292,42 @@ export const ProfileView: React.FC<Props> = ({ onOpenThemeModal, onOpenEquipment
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {/* Metas & Lembretes Locais Card (Checkpoint 06 - BLOCO 1 e BLOCO 2) */}
+      <div className="p-5 rounded-3xl bg-surface-card border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border"
+            style={{
+              backgroundColor: `${themeConfig.primaryHex}15`,
+              borderColor: `${themeConfig.primaryHex}35`,
+            }}
+          >
+            <Target className="w-5 h-5" style={{ color: themeConfig.primaryHex }} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Metas Pessoais & Lembretes Locais</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Configure frequência de treinos, dias preferidos e avisos internos do app
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsGoalModalOpen(true)}
+          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition active:scale-95 shrink-0 bg-surface-elevated border border-white/10 hover:border-primary-app"
+        >
+          <Bell className="w-3.5 h-3.5 text-amber-400" />
+          <span>Configurar Metas</span>
+        </button>
+      </div>
+
+      {/* Goal Settings Modal */}
+      <GoalSettingsModal
+        isOpen={isGoalModalOpen}
+        onClose={() => setIsGoalModalOpen(false)}
+      />
 
       {/* Profile Form */}
       <div className="p-5 rounded-3xl bg-surface-card border border-white/10">
