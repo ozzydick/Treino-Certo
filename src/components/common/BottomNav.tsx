@@ -25,7 +25,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onTabChange })
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0B0F12]/95 backdrop-blur-xl border-t border-white/8 safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-app-header/95 backdrop-blur-xl border-t border-white/8 safe-bottom">
       <div className="max-w-lg mx-auto grid grid-cols-5 px-1 py-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -34,7 +34,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onTabChange })
           return (
             <button
               key={item.id}
+              type="button"
               onClick={() => onTabChange(item.id)}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={`Abrir seção ${item.label}`}
               className="relative flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition duration-200 select-none group min-h-[52px]"
             >
               {/* Active glow background pill */}

@@ -1190,7 +1190,7 @@ async function runCheckpoint04TestSuite() {
     `Restauradas ${restoredSessions.length} sessões históricas com integridade confirmada.`
   );
 
-  // Teste de Existência física das 48 ilustrações 3D WebP
+  // Teste de existência física das ilustrações WebP de todo o catálogo atual
   const all48WebpExist = DEFAULT_EXERCISES_CATALOG.every((ex) => {
     const fileUrl = new URL(`../public/images/exercises/${ex.id}.webp`, import.meta.url);
     return fs.existsSync(fileUrl) && fs.statSync(fileUrl).size > 5000;
@@ -1199,7 +1199,7 @@ async function runCheckpoint04TestSuite() {
   assert(
     all48WebpExist && DEFAULT_EXERCISES_CATALOG.length >= 48,
     'INTEGRIDADE 04',
-    'Preservação integral dos exercícios oficiais e arquivos 3D WebP (800x600) em public/images/exercises/',
+    'Preservação integral dos exercícios oficiais e arquivos WebP locais em public/images/exercises/',
     `100% dos ${DEFAULT_EXERCISES_CATALOG.length} exercícios homologados possuem arquivos válidos em disco.`
   );
 

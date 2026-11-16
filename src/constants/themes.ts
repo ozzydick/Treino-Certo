@@ -66,6 +66,16 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     rgb: '214, 163, 72',
     description: 'Padrão ouro, prestígio exclusivo e evolução de alto escalão.',
   },
+  ocean: {
+    id: 'ocean',
+    name: 'OCEANO',
+    label: 'Verde Elétrico',
+    primaryHex: '#39F500',
+    complementaryHex: '#A6FF8C',
+    primaryDarkHex: '#1FA800',
+    rgb: '57, 245, 0',
+    description: 'Verde elétrico sobre tons profundos de petróleo, inspirado no visual atlântico premium.',
+  },
 };
 
 export const THEME_LIST = Object.values(THEMES);

@@ -159,7 +159,7 @@ export const SvgLineChart: React.FC<SvgLineChartProps> = ({
                 cy={p.y}
                 r={isHovered ? 5.5 : 3.5}
                 fill={isHovered ? '#FFFFFF' : themeConfig.primaryHex}
-                stroke="#0B0F12"
+                stroke="var(--app-bg)"
                 strokeWidth="1.5"
                 className="transition-all duration-150"
               />

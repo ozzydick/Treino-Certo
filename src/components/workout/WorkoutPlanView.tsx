@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   BookOpen,
@@ -58,7 +58,7 @@ export function WorkoutPlanView({ onOpenEquipments }: WorkoutPlanViewProps) {
   } = useWorkout();
 
   const { selectedIds, customEquipments, explicitCustomCompatibilityMap } = useEquipments();
-  const { getExerciseById } = useCustomExercises();
+  const { getExerciseById, ensureCatalogLoaded } = useCustomExercises();
 
   const [currentView, setCurrentView] = useState<'main' | 'history' | 'executing'>('main');
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
@@ -67,6 +67,12 @@ export function WorkoutPlanView({ onOpenEquipments }: WorkoutPlanViewProps) {
   const [planToEdit, setPlanToEdit] = useState<WorkoutPlanItem | null>(null);
   const [detailModalExercise, setDetailModalExercise] = useState<ExerciseItem | null>(null);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
+
+  useEffect(() => {
+    void ensureCatalogLoaded().catch((error) => {
+      console.error('Falha ao carregar catálogo de exercícios para as fichas:', error);
+    });
+  }, [ensureCatalogLoaded]);
 
   // Ficha atualmente em visualização
   const displayedPlan = useMemo(() => {

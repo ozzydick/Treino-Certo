@@ -160,7 +160,7 @@ export const ActivityCalendar: React.FC<ActivityCalendarProps> = ({
                   isSelected
                     ? 'border-2 bg-surface-elevated'
                     : hasWorkouts
-                    ? 'bg-[#121820] hover:bg-surface-elevated border border-white/10'
+                    ? 'bg-surface-card hover:bg-surface-elevated border border-white/10'
                     : 'bg-transparent hover:bg-white/5 border border-transparent'
                 }`}
                 style={
@@ -271,7 +271,7 @@ export const ActivityCalendar: React.FC<ActivityCalendarProps> = ({
                           return (
                             <div
                               key={lIdx}
-                              className="p-2 rounded-xl bg-[#0B0F14] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1"
+                              className="p-2 rounded-xl bg-surface-input border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1"
                             >
                               <div className="flex items-center gap-1.5">
                                 <Dumbbell className="w-3.5 h-3.5 text-slate-400" />

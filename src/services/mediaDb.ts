@@ -792,9 +792,9 @@ export const mediaDB = new MediaDB();
  */
 export async function compressImageFile(
   file: File,
-  maxWidth = 800,
-  maxHeight = 800,
-  quality = 0.82
+  maxWidth = 720,
+  maxHeight = 720,
+  quality = 0.78
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     // Se não estiver em ambiente de navegador com Image e Canvas, lê diretamente via FileReader
@@ -837,7 +837,12 @@ export async function compressImageFile(
         ctx.drawImage(img, 0, 0, width, height);
 
         try {
-          const compressed = canvas.toDataURL('image/jpeg', quality);
+          // WebP costuma reduzir significativamente o tamanho das fotos pessoais.
+          // Alguns navegadores antigos ignoram o MIME solicitado; nesse caso usamos JPEG.
+          const webp = canvas.toDataURL('image/webp', quality);
+          const compressed = webp.startsWith('data:image/webp;')
+            ? webp
+            : canvas.toDataURL('image/jpeg', quality);
           resolve(compressed);
         } catch {
           // Fallback para dataUrl original caso toDataURL falhe

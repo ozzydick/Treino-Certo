@@ -90,19 +90,19 @@ async function runCheckpoint07TestSuite() {
   // ===========================================================================
   console.log('\n--- BLOCO 2: AUDITORIA DE IMAGENS 3D REALISTAS DOS EXERCÍCIOS ---');
 
-  // Teste 04: Mapeamento de 100% dos 57 exercícios do catálogo
+  // Teste 04: Mapeamento 1-para-1 de todo o catálogo oficial
   const catalogCount = DEFAULT_EXERCISES_CATALOG.length;
   const mappedKeys = Object.keys(REALISTIC_3D_EXERCISE_IMAGES);
   const missingInMap = DEFAULT_EXERCISES_CATALOG.filter((ex) => !mappedKeys.includes(ex.id));
 
   assert(
-    catalogCount === 57 && mappedKeys.length >= 57 && missingInMap.length === 0,
+    catalogCount >= 57 && mappedKeys.length === catalogCount && missingInMap.length === 0,
     'CENÁRIO 04',
-    'Mapeamento 1-para-1 completo de todos os 57 exercícios na estrutura REALISTIC_3D_EXERCISE_IMAGES',
+    'Mapeamento 1-para-1 completo de todo o catálogo na estrutura REALISTIC_3D_EXERCISE_IMAGES',
     `Exercícios no catálogo: ${catalogCount} | Mapeamentos configurados: ${mappedKeys.length} | Exercícios sem imagem: ${missingInMap.length}`
   );
 
-  // Teste 05: Existência física dos 57 arquivos WebP na pasta public/images/exercises/
+  // Teste 05: Existência física de um WebP para cada exercício oficial
   const publicDir = path.resolve('public/images/exercises');
   const filesInPublic = fs.existsSync(publicDir) ? fs.readdirSync(publicDir) : [];
   const missingFiles = DEFAULT_EXERCISES_CATALOG.filter(
@@ -110,9 +110,9 @@ async function runCheckpoint07TestSuite() {
   );
 
   assert(
-    filesInPublic.length >= 57 && missingFiles.length === 0,
+    filesInPublic.length >= catalogCount && missingFiles.length === 0,
     'CENÁRIO 05',
-    'Existência física de todos os 57 arquivos de imagem .webp em public/images/exercises/',
+    'Existência física dos arquivos .webp correspondentes a todo o catálogo em public/images/exercises/',
     `Arquivos WebP encontrados em disk: ${filesInPublic.length} | Arquivos ausentes: ${missingFiles.length}`
   );
 

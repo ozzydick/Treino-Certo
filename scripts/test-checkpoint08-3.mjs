@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const calc = fs.readFileSync('src/utils/muscleVolumeCalculator.ts','utf8');
+const view = fs.readFileSync('src/components/evolution/EvolutionView.tsx','utf8');
+const types = fs.readFileSync('src/types/index.ts','utf8');
+assert.match(calc,/normalizeCompletedSessions\(sessions, nowMs\)/,'must use normalized completed sessions');
+assert.match(calc,/\(s\.setType \|\| 'working'\) !== 'warmup'/,'must exclude warm-up sets');
+assert.match(calc,/SECONDARY_FACTOR = 0\.5/,'secondary contribution must be explicit 0.5');
+assert.match(calc,/primaryMuscleGroup/,'must use primary muscle group from catalog');
+assert.match(calc,/secondaryMuscleGroups/,'must use secondary muscle groups from catalog');
+assert.match(calc,/weeksCount = 8/,'must calculate an eight-week view by default');
+assert.match(view,/activeSubTab === 'volume'/,'volume view must be wired into Evolution screen');
+assert.match(view,/Volume Muscular/,'navigation tab must be visible');
+assert.match(view,/Como interpretar/,'weighting assumptions must be explained to user');
+assert.match(types,/secondaryMuscleGroups: MuscleGroupId\[\]/,'catalog muscle mapping must remain typed');
+console.log('CP08.3 static checks: 10/10 passed');

@@ -11,7 +11,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { DEFAULT_EXERCISES_CATALOG } from '../constants/exercisesCatalog';
 import { dbService, safeLocalStorageGet, safeLocalStorageSet } from '../services/db';
 import {
   WorkoutDivision,
@@ -376,18 +375,28 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
           // ignore
         }
       }
+      const { DEFAULT_EXERCISES_CATALOG } = await import('../constants/exercisesCatalog');
       const fullCatalog = [...DEFAULT_EXERCISES_CATALOG, ...customExList];
 
       const exerciseLogs: WorkoutSessionExerciseLog[] = division.exercises.map((ex) => {
         const catalogEntry = fullCatalog.find((c) => c.id === ex.exerciseId);
         const name = catalogEntry ? catalogEntry.name : ex.exerciseId;
+        // Sugere os últimos valores concluídos para o mesmo exercício, sem alterar a prescrição.
+        const previousSession = [...sessionsHistory]
+          .filter((session) => session.isCompleted && session.exerciseLogs?.some((log) => log.exerciseId === ex.exerciseId))
+          .sort((a, b) => new Date(b.endTime || b.startTime).getTime() - new Date(a.endTime || a.startTime).getTime())[0];
+        const previousLog = previousSession?.exerciseLogs?.find((log) => log.exerciseId === ex.exerciseId);
+        const previousSet = previousLog?.sets.filter((set) => set.completed).slice(-1)[0];
+        const suggestedWeight = previousSet?.actualWeightKg ?? ex.prescribedWeightKg ?? 0;
+        const suggestedReps = previousSet?.actualReps ?? (parseInt(ex.prescribedReps.split('-')[0], 10) || 10);
         const setsCount = Math.max(1, ex.prescribedSets || 3);
         const sets = Array.from({ length: setsCount }, (_, i) => ({
           setNumber: i + 1,
+          setType: 'working' as const,
           prescribedReps: ex.prescribedReps || '10-12',
           prescribedWeightKg: ex.prescribedWeightKg,
-          actualReps: parseInt(ex.prescribedReps.split('-')[0], 10) || 10,
-          actualWeightKg: ex.prescribedWeightKg || 0,
+          actualReps: suggestedReps,
+          actualWeightKg: suggestedWeight,
           completed: false,
         }));
 
@@ -424,7 +433,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       setPersistenceError(null);
       return newSession;
     },
-    [workoutPlans]
+    [workoutPlans, sessionsHistory]
   );
 
   /**

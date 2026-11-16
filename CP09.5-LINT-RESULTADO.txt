@@ -1,0 +1,4 @@
+Comando executado: tsc --noEmit
+Resultado: bloqueado por dependências ausentes no ambiente.
+Erros: TS2688 não encontrou vite-plugin-pwa/client e vite/client.
+node_modules ausente; build Vite não pôde ser executado.

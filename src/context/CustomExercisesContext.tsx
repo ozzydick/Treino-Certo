@@ -10,19 +10,19 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useRef,
 } from 'react';
 import { dbService, safeLocalStorageGet, safeLocalStorageSet } from '../services/db';
-import { ExerciseItem, MuscleGroupId } from '../types';
-import {
-  DEFAULT_EXERCISES_CATALOG,
-  ORDERED_MUSCLE_GROUPS,
-} from '../constants/exercisesCatalog';
+import { ExerciseItem } from '../types';
+import { ORDERED_MUSCLE_GROUPS } from '../constants/exerciseCatalogMeta';
 
 const LOCAL_STORAGE_CUSTOM_EXERCISES_KEY = 'treino_certo_custom_exercises';
 
 interface CustomExercisesContextType {
   customExercises: ExerciseItem[];
   allExercises: ExerciseItem[];
+  isCatalogLoaded: boolean;
+  ensureCatalogLoaded: () => Promise<ExerciseItem[]>;
   isLoading: boolean;
   error: string | null;
   addCustomExercise: (
@@ -47,6 +47,9 @@ export const CustomExercisesProvider: React.FC<{ children: React.ReactNode }> = 
   children,
 }) => {
   const [customExercises, setCustomExercises] = useState<ExerciseItem[]>([]);
+  const [officialExercises, setOfficialExercises] = useState<ExerciseItem[]>([]);
+  const [isCatalogLoaded, setIsCatalogLoaded] = useState(false);
+  const catalogLoadPromiseRef = useRef<Promise<ExerciseItem[]> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,6 +98,27 @@ export const CustomExercisesProvider: React.FC<{ children: React.ReactNode }> = 
     loadCustomExercises();
   }, [loadCustomExercises]);
 
+  // O catálogo oficial (180 exercícios) fica fora do bundle inicial.
+  // É carregado apenas quando uma tela que precisa dele é aberta.
+  const ensureCatalogLoaded = useCallback(async (): Promise<ExerciseItem[]> => {
+    if (isCatalogLoaded) return officialExercises;
+    if (catalogLoadPromiseRef.current) return catalogLoadPromiseRef.current;
+
+    const loadPromise = import('../constants/exercisesCatalog')
+      .then((module) => {
+        const catalog = [...module.DEFAULT_EXERCISES_CATALOG] as ExerciseItem[];
+        setOfficialExercises(catalog);
+        setIsCatalogLoaded(true);
+        return catalog;
+      })
+      .finally(() => {
+        catalogLoadPromiseRef.current = null;
+      });
+
+    catalogLoadPromiseRef.current = loadPromise;
+    return loadPromise;
+  }, [isCatalogLoaded, officialExercises]);
+
   // Salva no IndexedDB e grava backup sincronizado no localStorage
   const saveCustomExercisesList = useCallback(
     async (list: ExerciseItem[]): Promise<void> => {
@@ -114,8 +138,8 @@ export const CustomExercisesProvider: React.FC<{ children: React.ReactNode }> = 
 
   // Catálogo completo unificado: Padrão + Personalizados do Usuário
   const allExercises = useMemo(() => {
-    return [...DEFAULT_EXERCISES_CATALOG, ...customExercises];
-  }, [customExercises]);
+    return [...officialExercises, ...customExercises];
+  }, [officialExercises, customExercises]);
 
   const getExerciseById = useCallback(
     (id: string): ExerciseItem | undefined => {
@@ -165,9 +189,16 @@ export const CustomExercisesProvider: React.FC<{ children: React.ReactNode }> = 
       }
 
       const trimmedName = exerciseData.name.trim();
+      let catalog: ExerciseItem[];
+      try {
+        catalog = await ensureCatalogLoaded();
+      } catch (err) {
+        console.error('Falha ao carregar catálogo para validar duplicidade:', err);
+        return { success: false, error: 'Não foi possível validar o catálogo. Tente novamente.' };
+      }
 
       // Verifica duplicidade de nome no catálogo completo (case-insensitive)
-      const isDuplicate = allExercises.some(
+      const isDuplicate = [...catalog, ...customExercises].some(
         (ex) => ex.name.trim().toLowerCase() === trimmedName.toLowerCase()
       );
       if (isDuplicate) {
@@ -221,7 +252,7 @@ export const CustomExercisesProvider: React.FC<{ children: React.ReactNode }> = 
         return { success: false, error: 'Falha ao salvar o exercício no banco de dados local.' };
       }
     },
-    [allExercises, customExercises, saveCustomExercisesList]
+    [ensureCatalogLoaded, customExercises, saveCustomExercisesList]
   );
 
   const updateCustomExercise = useCallback(
@@ -247,7 +278,14 @@ export const CustomExercisesProvider: React.FC<{ children: React.ReactNode }> = 
 
       if (updatedData.name !== undefined) {
         const trimmedName = updatedData.name.trim();
-        const isDuplicate = allExercises.some(
+        let catalog: ExerciseItem[];
+        try {
+          catalog = await ensureCatalogLoaded();
+        } catch (err) {
+          console.error('Falha ao carregar catálogo para validar duplicidade:', err);
+          return { success: false, error: 'Não foi possível validar o catálogo. Tente novamente.' };
+        }
+        const isDuplicate = [...catalog, ...customExercises].some(
           (ex) => ex.id !== id && ex.name.trim().toLowerCase() === trimmedName.toLowerCase()
         );
         if (isDuplicate) {
@@ -274,7 +312,7 @@ export const CustomExercisesProvider: React.FC<{ children: React.ReactNode }> = 
         return { success: false, error: 'Falha ao atualizar o exercício localmente.' };
       }
     },
-    [allExercises, customExercises, saveCustomExercisesList]
+    [ensureCatalogLoaded, customExercises, saveCustomExercisesList]
   );
 
   const deleteCustomExercise = useCallback(
@@ -302,6 +340,8 @@ export const CustomExercisesProvider: React.FC<{ children: React.ReactNode }> = 
     () => ({
       customExercises,
       allExercises,
+      isCatalogLoaded,
+      ensureCatalogLoaded,
       isLoading,
       error,
       addCustomExercise,
@@ -313,6 +353,8 @@ export const CustomExercisesProvider: React.FC<{ children: React.ReactNode }> = 
     [
       customExercises,
       allExercises,
+      isCatalogLoaded,
+      ensureCatalogLoaded,
       isLoading,
       error,
       addCustomExercise,

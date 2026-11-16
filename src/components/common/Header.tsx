@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Palette } from 'lucide-react';
+import { Palette, RefreshCw } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { NavigationTab } from '../../types';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -13,18 +13,21 @@ interface HeaderProps {
   currentTab: NavigationTab;
   onNavigate: (tab: NavigationTab) => void;
   onOpenThemeSelector: () => void;
+  onRefresh: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onNavigate, onOpenThemeSelector }) => {
+export const Header: React.FC<HeaderProps> = ({ onNavigate, onOpenThemeSelector, onRefresh }) => {
   const { themeConfig } = useTheme();
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#0B0F12]/90 backdrop-blur-xl border-b border-white/5 px-4 py-3">
+    <header className="sticky top-0 z-40 w-full bg-app-header/90 backdrop-blur-xl border-b border-white/5 px-4 py-3">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         {/* Brand identity */}
-        <div
+        <button
+          type="button"
           onClick={() => onNavigate('home')}
-          className="flex items-center gap-2.5 cursor-pointer select-none group"
+          aria-label="Ir para o início do TREINO CERTO"
+          className="flex items-center gap-2.5 cursor-pointer select-none group text-left rounded-xl focus-visible:outline-offset-4"
         >
           {/* Athletic Monogram badge */}
           <div className="relative w-9 h-9 rounded-xl bg-surface-elevated border border-white/10 flex items-center justify-center overflow-hidden group-hover:border-primary-app transition shadow-sm">
@@ -52,17 +55,28 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, onOpenThemeSelector 
             </div>
             <p className="text-[10px] text-slate-400 font-medium">Seu treino. Sua evolução.</p>
           </div>
-        </div>
+        </button>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="flex items-center gap-1.5 px-2.5 py-2 min-h-10 rounded-lg bg-surface-elevated border border-white/10 hover:border-primary-app text-xs text-slate-200 transition active:scale-95"
+            title="Atualizar aplicativo sem perder a tela atual"
+            aria-label="Atualizar aplicativo"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-slate-300" />
+            <span className="text-[11px] font-semibold text-slate-300 hidden sm:inline">Atualizar</span>
+          </button>
+
           {/* PWA Install mini trigger */}
           <PWAInstallButton variant="header" />
 
           {/* Quick theme trigger button */}
           <button
             onClick={onOpenThemeSelector}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-elevated border border-white/10 hover:border-primary-app text-xs text-slate-200 transition active:scale-95"
+            className="flex items-center gap-1.5 px-2.5 py-2 min-h-10 rounded-lg bg-surface-elevated border border-white/10 hover:border-primary-app text-xs text-slate-200 transition active:scale-95"
             title={`Tema atual: ${themeConfig.name}`}
           >
             <div

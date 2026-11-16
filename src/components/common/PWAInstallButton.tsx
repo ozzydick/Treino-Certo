@@ -110,7 +110,7 @@ export const PWAInstallButton: React.FC<Props> = ({ variant = 'card' }) => {
       {/* iOS Safari Guide Modal */}
       {showIOSGuide && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-[#121820] border border-white/15 p-6 shadow-2xl relative">
+          <div className="w-full max-w-sm rounded-2xl bg-surface-card border border-white/15 p-6 shadow-2xl relative">
             <button
               onClick={() => setShowIOSGuide(false)}
               className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition"

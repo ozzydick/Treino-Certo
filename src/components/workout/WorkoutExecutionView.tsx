@@ -19,6 +19,8 @@ import {
   Play,
   RotateCcw,
   Sparkles,
+  Repeat2,
+  Workflow,
   Trash2,
   X,
 } from 'lucide-react';
@@ -50,6 +52,7 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
     discardActiveSession,
     startRestTimer,
     persistenceError,
+    isSavingSession,
     clearPersistenceError,
   } = useWorkout();
   const { selectedIds, customEquipments, explicitCustomCompatibilityMap } = useEquipments();
@@ -63,6 +66,8 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
   const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
   const [sessionNotes, setSessionNotes] = useState('');
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [isDiscarding, setIsDiscarding] = useState(false);
 
   // Sincroniza cronômetro decorrido baseado no estado temporal persistido da sessão
   useEffect(() => {
@@ -118,6 +123,45 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
       )
     : true;
 
+  const currentGroupLogs = currentExLog.groupId
+    ? exerciseLogs.filter((log) => log.groupId === currentExLog.groupId).sort((a, b) => (a.groupOrder || 0) - (b.groupOrder || 0))
+    : [];
+
+  const handleCreateExerciseGroup = async (groupType: 'superset' | 'circuit') => {
+    const groupSize = groupType === 'superset' ? 2 : 3;
+    const indexes = Array.from({ length: groupSize }, (_, offset) => currentExerciseIndex + offset)
+      .filter((index) => index < exerciseLogs.length);
+    if (indexes.length < 2) return;
+    const groupId = `group_${Date.now()}_${currentExerciseIndex}`;
+    // A identidade do item é sua posição na sessão, não exerciseId: o mesmo
+    // exercício pode aparecer mais de uma vez no plano e deve continuar distinto.
+    const selectedIndexes = new Set(indexes);
+    const replacedGroupIds = new Set(indexes
+      .map((index) => exerciseLogs[index]?.groupId)
+      .filter((id): id is string => Boolean(id)));
+    await updateActiveSession((prev) => ({
+      ...prev,
+      exerciseLogs: (prev.exerciseLogs || []).map((log, index) => {
+        const clean = replacedGroupIds.has(log.groupId || '')
+          ? (({ groupId: _id, groupType: _type, groupOrder: _order, ...rest }) => rest)(log)
+          : log;
+        if (!selectedIndexes.has(index)) return clean;
+        return { ...clean, groupId, groupType, groupOrder: index - currentExerciseIndex + 1 };
+      }),
+    }));
+  };
+
+  const handleRemoveExerciseGroup = async () => {
+    if (!currentExLog.groupId) return;
+    const groupId = currentExLog.groupId;
+    await updateActiveSession((prev) => ({
+      ...prev,
+      exerciseLogs: (prev.exerciseLogs || []).map((log) => log.groupId === groupId
+        ? (({ groupId: _groupId, groupType: _groupType, groupOrder: _groupOrder, ...rest }) => rest)(log)
+        : log),
+    }));
+  };
+
   const handleTogglePause = async () => {
     try {
       setLocalError(null);
@@ -142,25 +186,36 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
     setLocalError(null);
 
     try {
-      await updateActiveSession((prev) => {
-        const updatedLogs = (prev.exerciseLogs || []).map((exLog) => {
-          if (exLog.exerciseId !== currentExLog.exerciseId) return exLog;
+      const savedSession = await updateActiveSession((prev) => {
+        const updatedLogs = (prev.exerciseLogs || []).map((exLog, index) => {
+          if (index !== currentExerciseIndex) return exLog;
           const updatedSets = exLog.sets.map((s) => {
             if (s.setNumber !== setNumber) return s;
-            return {
-              ...s,
-              completed: willBeCompleted,
-              completedAt: willBeCompleted ? new Date().toISOString() : undefined,
-            };
+            return { ...s, completed: willBeCompleted, completedAt: willBeCompleted ? new Date().toISOString() : undefined };
           });
           return { ...exLog, sets: updatedSets };
         });
         return { ...prev, exerciseLogs: updatedLogs };
       });
 
-      // Dispara o timer de descanso SOMENTE após confirmação formal da persistência no IndexedDB
-      if (willBeCompleted) {
-        startRestTimer(60);
+      // Em superséries/circuitos, alterna os exercícios na mesma rodada e
+      // inicia descanso somente quando todos os membros concluem a série correspondente.
+      if (willBeCompleted && currentExLog.groupId) {
+        const members = (savedSession.exerciseLogs || [])
+          .map((log, index) => ({ log, index }))
+          .filter(({ log }) => log.groupId === currentExLog.groupId)
+          .sort((a, b) => (a.log.groupOrder || 0) - (b.log.groupOrder || 0));
+        const roundComplete = members.every(({ log }) => log.skipped || !log.sets.some((set) => set.setNumber === setNumber) || log.sets.some((set) => set.setNumber === setNumber && set.completed));
+        if (!roundComplete) {
+          const nextMember = members.find(({ log, index }) => index !== currentExerciseIndex && !log.skipped && log.sets.some((set) => set.setNumber === setNumber && !set.completed));
+          if (nextMember) setCurrentExerciseIndex(nextMember.index);
+        } else {
+          const firstNextRound = members.find(({ log }) => !log.skipped && log.sets.some((set) => set.setNumber > setNumber && !set.completed));
+          if (firstNextRound) setCurrentExerciseIndex(firstNextRound.index);
+          startRestTimer(0);
+        }
+      } else if (willBeCompleted) {
+        startRestTimer(0);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha ao salvar série no banco de dados';
@@ -173,13 +228,13 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
   // Atualiza valores reais digitados em uma série (reps ou carga)
   const handleUpdateSetValues = async (
     setNumber: number,
-    field: 'actualReps' | 'actualWeightKg',
-    value: number
+    field: 'actualReps' | 'actualWeightKg' | 'effortRpe' | 'effortRir',
+    value: number | undefined
   ) => {
-    const val = Math.max(0, value);
+    const val = value === undefined ? undefined : Math.max(0, value);
     await updateActiveSession((prev) => {
-      const updatedLogs = (prev.exerciseLogs || []).map((exLog) => {
-        if (exLog.exerciseId !== currentExLog.exerciseId) return exLog;
+      const updatedLogs = (prev.exerciseLogs || []).map((exLog, index) => {
+        if (index !== currentExerciseIndex) return exLog;
         const updatedSets = exLog.sets.map((s) => {
           if (s.setNumber !== setNumber) return s;
           return { ...s, [field]: val };
@@ -188,6 +243,15 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
       });
       return { ...prev, exerciseLogs: updatedLogs };
     });
+  };
+
+  const handleUpdateSetType = async (setNumber: number, setType: WorkoutSessionSetLog['setType']) => {
+    await updateActiveSession((prev) => ({
+      ...prev,
+      exerciseLogs: (prev.exerciseLogs || []).map((log, index) => index !== currentExerciseIndex ? log : ({
+        ...log, sets: log.sets.map((set) => set.setNumber === setNumber ? { ...set, setType } : set),
+      })),
+    }));
   };
 
   // Adiciona série extra
@@ -202,11 +266,12 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
       actualReps: lastSet ? lastSet.actualReps : 10,
       actualWeightKg: lastSet ? lastSet.actualWeightKg : 0,
       completed: false,
+      setType: 'working',
     };
 
     await updateActiveSession((prev) => {
-      const updatedLogs = (prev.exerciseLogs || []).map((exLog) => {
-        if (exLog.exerciseId !== currentExLog.exerciseId) return exLog;
+      const updatedLogs = (prev.exerciseLogs || []).map((exLog, index) => {
+        if (index !== currentExerciseIndex) return exLog;
         return { ...exLog, sets: [...exLog.sets, newSet] };
       });
       return { ...prev, exerciseLogs: updatedLogs };
@@ -217,8 +282,8 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
   const handleToggleSkipExercise = async () => {
     const nextSkipped = !currentExLog.skipped;
     await updateActiveSession((prev) => {
-      const updatedLogs = (prev.exerciseLogs || []).map((exLog) => {
-        if (exLog.exerciseId !== currentExLog.exerciseId) return exLog;
+      const updatedLogs = (prev.exerciseLogs || []).map((exLog, index) => {
+        if (index !== currentExerciseIndex) return exLog;
         return { ...exLog, skipped: nextSkipped };
       });
       return { ...prev, exerciseLogs: updatedLogs };
@@ -227,23 +292,35 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
 
   // Finalização oficial
   const handleConfirmFinish = async () => {
+    if (isFinishing || isSavingSession) return;
+    setIsFinishing(true);
+    setLocalError(null);
     try {
       await finishActiveSession(sessionNotes.trim() || undefined);
       setIsFinishModalOpen(false);
       if (onFinish) onFinish();
     } catch (e) {
-      console.error('Falha ao concluir treino:', e);
+      const msg = e instanceof Error ? e.message : 'Não foi possível salvar o treino. Tente novamente.';
+      setLocalError(msg);
+    } finally {
+      setIsFinishing(false);
     }
   };
 
   // Descarte
   const handleConfirmDiscard = async () => {
+    if (isDiscarding) return;
+    setIsDiscarding(true);
+    setLocalError(null);
     try {
       await discardActiveSession();
       setIsDiscardConfirmOpen(false);
       onMinimize();
     } catch (e) {
-      console.error('Falha ao descartar treino:', e);
+      const msg = e instanceof Error ? e.message : 'Não foi possível descartar a sessão.';
+      setLocalError(msg);
+    } finally {
+      setIsDiscarding(false);
     }
   };
 
@@ -257,6 +334,14 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
     0
   );
   const currentVolume = activeSession.totalVolumeKg || 0;
+  const sessionProgressPercent = totalSetsCount > 0
+    ? Math.round((completedSetsCount / totalSetsCount) * 100)
+    : 0;
+  const currentExerciseCompletedSets = currentExLog.sets.filter((set) => set.completed).length;
+  const currentExerciseTotalSets = currentExLog.sets.length;
+  const currentExerciseProgressPercent = currentExerciseTotalSets > 0
+    ? Math.round((currentExerciseCompletedSets / currentExerciseTotalSets) * 100)
+    : 0;
 
   return (
     <div className="min-h-screen bg-app-dark text-slate-100 flex flex-col pb-28 animate-fadeIn">
@@ -273,10 +358,11 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
             </button>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className={`w-2 h-2 rounded-full ${activeSession.isPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
                 <h1 className="text-sm font-bold text-white truncate">
                   {activeSession.divisionName}
                 </h1>
+                {activeSession.isPaused && <span className="text-[9px] uppercase tracking-wider font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-md px-1.5 py-0.5">Pausado</span>}
               </div>
               <p className="text-[11px] text-slate-400 truncate">
                 {activeSession.planName || 'Ficha de Treino'}
@@ -288,8 +374,13 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-950 border border-slate-800 font-mono text-sm font-bold text-orange-400 shadow-inner">
               <Clock className="w-4 h-4 text-orange-400" />
-              <span>{formattedTime}</span>
+              <span aria-label={`Tempo de treino ${formattedTime}`} aria-live="off">{formattedTime}</span>
             </div>
+            {isSavingSession && (
+              <span role="status" className="hidden sm:inline-flex items-center gap-1 text-[10px] text-sky-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" /> Salvando
+              </span>
+            )}
 
             <button
               onClick={handleTogglePause}
@@ -299,13 +390,16 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                   : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
               }`}
               title={activeSession.isPaused ? 'Retomar treino' : 'Pausar treino'}
+              aria-label={activeSession.isPaused ? 'Retomar treino' : 'Pausar treino'}
+              disabled={isSavingSession}
             >
               {activeSession.isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
             </button>
 
             <button
               onClick={() => setIsFinishModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-orange-500/20 transition-all"
+              disabled={isFinishing || isDiscarding}
+              className="flex items-center gap-1.5 disabled:opacity-50 px-3.5 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-orange-500/20 transition-all"
             >
               <Check className="w-4 h-4" /> Finalizar
             </button>
@@ -313,10 +407,35 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
         </div>
       </div>
 
+      {/* Progresso geral do treino: acompanha séries efetivamente persistidas. */}
+      <div className="sticky top-[68px] z-20 bg-slate-950/95 border-b border-slate-800/80 px-4 py-2 backdrop-blur-md">
+        <div className="max-w-4xl mx-auto space-y-1.5">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="font-semibold text-slate-300">Progresso do treino</span>
+            <span className="font-bold tabular-nums text-orange-400">
+              {completedSetsCount}/{totalSetsCount} séries · {sessionProgressPercent}%
+            </span>
+          </div>
+          <div
+            role="progressbar"
+            aria-label="Progresso geral do treino"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={sessionProgressPercent}
+            className="h-1.5 rounded-full bg-slate-800 overflow-hidden"
+          >
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400 transition-[width] duration-300 ease-out"
+              style={{ width: `${sessionProgressPercent}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Alerta de Confiabilidade / Erro de Persistência */}
       {(persistenceError || localError) && (
         <div className="max-w-4xl mx-auto w-full px-3 sm:px-4 pt-3">
-          <div className="p-3 bg-red-500/15 border border-red-500/40 rounded-xl text-xs text-red-300 flex items-center justify-between shadow-lg">
+          <div role="alert" className="p-3 bg-red-500/15 border border-red-500/40 rounded-xl text-xs text-red-300 flex items-center justify-between shadow-lg">
             <span className="font-medium">
               Aviso de Confiabilidade: {persistenceError || localError}
             </span>
@@ -325,7 +444,8 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                 setLocalError(null);
                 clearPersistenceError();
               }}
-              className="p-1 text-red-400 hover:text-white rounded"
+              className="p-2 min-w-9 min-h-9 flex items-center justify-center text-red-400 hover:text-white rounded"
+              aria-label="Fechar aviso de erro"
             >
               <X className="w-4 h-4" />
             </button>
@@ -356,7 +476,7 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
 
               return (
                 <button
-                  key={exLog.exerciseId || idx}
+                  key={`${exLog.exerciseId || 'exercise'}-${idx}`}
                   onClick={() => setCurrentExerciseIndex(idx)}
                   className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
                     isSelected
@@ -371,6 +491,7 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                   }`}
                 >
                   <span>#{idx + 1}</span>
+                  {exLog.groupType && <span className="text-[9px] font-black opacity-90">{exLog.groupType === 'superset' ? 'SS' : 'CT'}</span>}
                   <span className="max-w-[100px] sm:max-w-[130px] truncate">
                     {exLog.exerciseName}
                   </span>
@@ -388,6 +509,35 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
           >
             <ChevronRight className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Agrupamento de exercícios: supersérie ou circuito */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Organização da execução</p>
+              {currentExLog.groupId ? (
+                <p className="text-xs text-emerald-300 font-semibold mt-1">
+                  {currentExLog.groupType === 'superset' ? 'Supersérie' : 'Circuito'} · exercício {currentExLog.groupOrder || 1} de {currentGroupLogs.length}
+                </p>
+              ) : <p className="text-xs text-slate-500 mt-1">Exercício sem agrupamento</p>}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <button type="button" onClick={() => handleCreateExerciseGroup('superset')} disabled={currentExerciseIndex >= exerciseLogs.length - 1}
+                className="inline-flex items-center gap-1 rounded-lg border border-violet-500/30 bg-violet-500/10 px-2.5 py-2 text-[10px] font-bold text-violet-300 disabled:opacity-30">
+                <Repeat2 className="h-3.5 w-3.5"/> Supersérie
+              </button>
+              <button type="button" onClick={() => handleCreateExerciseGroup('circuit')} disabled={currentExerciseIndex >= exerciseLogs.length - 1}
+                className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-2 text-[10px] font-bold text-cyan-300 disabled:opacity-30">
+                <Workflow className="h-3.5 w-3.5"/> Circuito
+              </button>
+              {currentExLog.groupId && <button type="button" onClick={handleRemoveExerciseGroup} className="rounded-lg border border-slate-700 px-2.5 py-2 text-[10px] font-semibold text-slate-400 hover:text-white">Desagrupar</button>}
+            </div>
+          </div>
+          {currentExLog.groupId && <div className="flex flex-wrap gap-1.5">{currentGroupLogs.map((log, index) => (
+            <span key={`${log.exerciseId}-${index}`} className="rounded-lg bg-slate-800 px-2 py-1 text-[10px] text-slate-300">{index + 1}. {log.exerciseName}</span>
+          ))}</div>}
+          <p className="text-[10px] text-slate-500">Supersérie agrupa 2 exercícios; circuito agrupa até 3 exercícios consecutivos. Os registros de séries permanecem individuais.</p>
         </div>
 
         {/* Card do Exercício Atual em Destaque */}
@@ -474,10 +624,22 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Dumbbell className="w-4 h-4 text-orange-400" /> Séries e Registro de Cargas
               </h3>
-              <span className="text-xs text-slate-400">
-                {currentExLog.sets.filter((s) => s.completed).length} de {currentExLog.sets.length}{' '}
-                concluídas
+              <span className="text-xs text-slate-400 tabular-nums">
+                {currentExerciseCompletedSets} de {currentExerciseTotalSets} concluídas · {currentExerciseProgressPercent}%
               </span>
+            </div>
+            <div
+              role="progressbar"
+              aria-label={`Progresso de ${currentExLog.exerciseName}`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={currentExerciseProgressPercent}
+              className="h-1 rounded-full bg-slate-800 overflow-hidden mb-3"
+            >
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-[width] duration-300 ease-out"
+                style={{ width: `${currentExerciseProgressPercent}%` }}
+              />
             </div>
 
             {/* Lista de Séries */}
@@ -486,14 +648,14 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                 return (
                   <div
                     key={setLog.setNumber}
-                    className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition-all ${
+                    className={`flex flex-col gap-3 p-3 sm:p-3.5 rounded-xl border transition-all ${
                       setLog.completed
                         ? 'bg-emerald-950/20 border-emerald-500/40'
                         : 'bg-slate-900 border-slate-800 hover:border-slate-700'
                     }`}
                   >
                     {/* Set Number & Prescription Target */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between gap-3 w-full">
                       <div
                         className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
                           setLog.completed
@@ -512,13 +674,24 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                           {setLog.prescribedReps} reps
                           {setLog.prescribedWeightKg ? ` • ${setLog.prescribedWeightKg} kg` : ''}
                         </span>
+                        <select
+                          aria-label={`Tipo da série ${setLog.setNumber}`}
+                          value={setLog.setType || 'working'}
+                          onChange={(e) => handleUpdateSetType(setLog.setNumber, e.target.value as WorkoutSessionSetLog['setType'])}
+                          className="mt-1 block max-w-[118px] rounded-md border border-slate-700 bg-slate-950 px-1.5 py-1 text-[10px] text-slate-300"
+                        >
+                          <option value="warmup">Aquecimento</option>
+                          <option value="working">Efetiva</option>
+                          <option value="drop">Drop set</option>
+                          <option value="failure">Até a falha</option>
+                        </select>
                       </div>
                     </div>
 
                     {/* Inputs: Carga Real (kg) e Repetições Reais */}
-                    <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-end max-w-sm">
+                    <div className="grid grid-cols-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 w-full items-end">
                       {/* Carga Real */}
-                      <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                      <div className="flex items-center gap-1 bg-slate-950 px-2 py-2 rounded-lg border border-slate-800 min-w-0">
                         <button
                           type="button"
                           onClick={() =>
@@ -528,13 +701,16 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                               Math.max(0, setLog.actualWeightKg - 2)
                             )
                           }
-                          className="w-5 h-5 rounded bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs"
+                          aria-label={`Diminuir carga da série ${setLog.setNumber}`}
+                          className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-sm shrink-0"
                         >
                           -
                         </button>
                         <div className="text-center w-12">
                           <input
+                            aria-label={`Carga realizada em kg na série ${setLog.setNumber}`}
                             type="number"
+                            inputMode="decimal"
                             step="0.5"
                             min="0"
                             value={setLog.actualWeightKg}
@@ -558,14 +734,15 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                               setLog.actualWeightKg + 2
                             )
                           }
-                          className="w-5 h-5 rounded bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs"
+                          aria-label={`Aumentar carga da série ${setLog.setNumber}`}
+                          className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-sm shrink-0"
                         >
                           +
                         </button>
                       </div>
 
                       {/* Repetições Reais */}
-                      <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                      <div className="flex items-center gap-1 bg-slate-950 px-2 py-2 rounded-lg border border-slate-800 min-w-0">
                         <button
                           type="button"
                           onClick={() =>
@@ -575,13 +752,16 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                               Math.max(1, setLog.actualReps - 1)
                             )
                           }
-                          className="w-5 h-5 rounded bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs"
+                          aria-label={`Diminuir repetições da série ${setLog.setNumber}`}
+                          className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-sm shrink-0"
                         >
                           -
                         </button>
                         <div className="text-center w-10">
                           <input
+                            aria-label={`Repetições realizadas na série ${setLog.setNumber}`}
                             type="number"
+                            inputMode="numeric"
                             min="1"
                             value={setLog.actualReps}
                             onChange={(e) =>
@@ -604,7 +784,8 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                               setLog.actualReps + 1
                             )
                           }
-                          className="w-5 h-5 rounded bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs"
+                          aria-label={`Aumentar repetições da série ${setLog.setNumber}`}
+                          className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-sm shrink-0"
                         >
                           +
                         </button>
@@ -615,7 +796,7 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                         type="button"
                         disabled={savingSetNumber === setLog.setNumber}
                         onClick={() => handleToggleSetCompletion(setLog.setNumber)}
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                        className={`col-span-2 sm:col-span-1 w-full sm:w-9 h-10 sm:h-9 rounded-xl flex items-center justify-center transition-all ${
                           savingSetNumber === setLog.setNumber
                             ? 'opacity-60 cursor-wait'
                             : ''
@@ -632,6 +813,14 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
                           <Check className="w-5 h-5 font-bold" />
                         )}
                       </button>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 px-1 pb-1 text-[10px] text-slate-400">
+                      <label className="flex items-center gap-1">RPE
+                        <input aria-label={`RPE série ${setLog.setNumber}`} type="number" min="1" max="10" step="0.5" value={setLog.effortRpe ?? ''} onChange={(e) => handleUpdateSetValues(setLog.setNumber, 'effortRpe', e.target.value === '' ? undefined : Math.min(10, Math.max(1, Number(e.target.value))))} placeholder="—" className="w-10 rounded bg-slate-950 border border-slate-700 px-1 py-1 text-center text-white" />
+                      </label>
+                      <label className="flex items-center gap-1">RIR
+                        <input aria-label={`RIR série ${setLog.setNumber}`} type="number" min="0" max="10" step="1" value={setLog.effortRir ?? ''} onChange={(e) => handleUpdateSetValues(setLog.setNumber, 'effortRir', e.target.value === '' ? undefined : Math.min(10, Math.max(0, Number(e.target.value))))} placeholder="—" className="w-10 rounded bg-slate-950 border border-slate-700 px-1 py-1 text-center text-white" />
+                      </label>
                     </div>
                   </div>
                 );
@@ -746,9 +935,15 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
               </div>
               <div>
                 <span className="text-[10px] text-slate-500 uppercase block">Volume Total</span>
-                <span className="text-sm font-bold text-orange-400">
-                  {currentVolume.toLocaleString('pt-BR')} kg
-                </span>
+                <span className="text-sm font-bold text-orange-400">{currentVolume.toLocaleString('pt-BR')} kg</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500 uppercase block">Séries concluídas</span>
+                <span className="text-sm font-bold text-white">{completedSetsCount}/{totalSetsCount}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500 uppercase block">Exercícios realizados</span>
+                <span className="text-sm font-bold text-white">{exerciseLogs.filter((entry) => !entry.skipped && entry.sets.some((set) => set.completed)).length}/{exerciseLogs.filter((entry) => !entry.skipped).length}</span>
               </div>
             </div>
 
@@ -776,9 +971,10 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
               <button
                 type="button"
                 onClick={handleConfirmFinish}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                disabled={isFinishing || isSavingSession}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all disabled:opacity-60 disabled:cursor-wait"
               >
-                <Check className="w-4 h-4" /> Salvar no Histórico
+                {isFinishing ? <><span className="w-3.5 h-3.5 border-2 border-white/50 border-t-white rounded-full animate-spin" /> Salvando...</> : <><Check className="w-4 h-4" /> Salvar no Histórico</>}
               </button>
             </div>
           </div>
@@ -810,9 +1006,10 @@ export function WorkoutExecutionView({ onMinimize, onFinish }: WorkoutExecutionV
               <button
                 type="button"
                 onClick={handleConfirmDiscard}
-                className="flex-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-colors shadow-md"
+                disabled={isDiscarding}
+                className="flex-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-colors shadow-md disabled:opacity-60 disabled:cursor-wait"
               >
-                Sim, Descartar
+                {isDiscarding ? 'Descartando...' : 'Sim, Descartar'}
               </button>
             </div>
           </div>

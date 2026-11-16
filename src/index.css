@@ -3,7 +3,16 @@
 :root {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  
+
+  /* Paleta base premium petróleo: permanece estável entre os temas. */
+  --app-bg: #061A1C;
+  --app-header: #08272B;
+  --app-surface: #0B282C;
+  --app-elevated: #10363A;
+  --app-input: #071F22;
+  --app-border: rgba(170, 224, 219, 0.11);
+  --app-border-strong: rgba(170, 224, 219, 0.18);
+
   /* Theme tokens dynamically updated via ThemeProvider */
   --primary: #FF7A1A;
   --primary-light: #FFAB52;
@@ -14,78 +23,57 @@
   --primary-surface: rgba(255, 122, 26, 0.1);
 }
 
+html { color-scheme: dark; background: var(--app-bg); }
+::selection { background: var(--primary-surface); color: #FFFFFF; }
+
 body {
   font-family: var(--font-sans);
-  background-color: #0B0F12;
-  color: #F8FAFC;
+  background-color: var(--app-bg);
+  color: #F1FAF9;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
 
-/* Custom Scrollbar for Dark Premium */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0E1318;
-}
-::-webkit-scrollbar-thumb {
-  background: #232C37;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--app-bg); }
+::-webkit-scrollbar-thumb { background: #1B484B; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #286267; }
 
-/* Premium Surface Utility Classes */
-.bg-app-dark {
-  background-color: #0B0F12;
-}
-
-.bg-surface-card {
-  background-color: #121820;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.bg-surface-elevated {
-  background-color: #171F2A;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.bg-surface-input {
-  background-color: #0F141C;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
+/* Semantic surfaces shared by every screen and theme. */
+.bg-app-dark { background-color: var(--app-bg); }
+.bg-app-header { background-color: var(--app-header); }
+.bg-surface-card { background-color: var(--app-surface); border: 1px solid var(--app-border); }
+.bg-surface-elevated { background-color: var(--app-elevated); border: 1px solid var(--app-border-strong); }
+.bg-surface-input { background-color: var(--app-input); border: 1px solid var(--app-border); }
 
 /* Dynamic Primary Color Helpers */
-.bg-primary-app {
-  background-color: var(--primary);
-}
+.bg-primary-app { background-color: var(--primary); }
+.text-primary-app { color: var(--primary); }
+.border-primary-app { border-color: var(--primary); }
+.ring-primary-app { --tw-ring-color: var(--primary); }
+.glow-primary-app { box-shadow: 0 4px 20px -2px var(--primary-glow); }
+.glow-primary-sm { box-shadow: 0 2px 10px -1px var(--primary-glow); }
 
-.text-primary-app {
-  color: var(--primary);
+/* Keyboard accessibility and visible focus across controls. */
+:where(button, a, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
 }
-
-.border-primary-app {
-  border-color: var(--primary);
-}
-
-.ring-primary-app {
-  --tw-ring-color: var(--primary);
-}
-
-.glow-primary-app {
-  box-shadow: 0 4px 20px -2px var(--primary-glow);
-}
-
-.glow-primary-sm {
-  box-shadow: 0 2px 10px -1px var(--primary-glow);
-}
+button, a { touch-action: manipulation; }
 
 /* Safe area insets for mobile navigation */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 16px);
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+
+/* Short, low-cost navigation transition. */
+@keyframes app-route-enter {
+  from { opacity: 0.72; transform: translate3d(0, 4px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.app-route-enter { animation: app-route-enter 150ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .app-route-enter { animation: none; }
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }

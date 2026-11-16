@@ -29,3 +29,20 @@ View your app in AI Studio: https://ai.studio/apps/032ad4bf-d428-4003-aea9-1f03f
 
 ## Atualização visual incremental 01.2
 A imagem WebP do exercício `ex_peito_supino_inclinado_halteres` agora é utilizada em todos os tamanhos do componente `ExerciseIllustration` (miniaturas e tela de detalhes). A renderização usa `object-contain` para preservar a composição completa da imagem, sem cortes. Os outros 35 exercícios continuam usando suas ilustrações SVG ou placeholders nominais atuais. Nenhum ID, instrução, grupo muscular, compatibilidade ou banco local foi alterado.
+
+## CP09.3 — Evolução e inteligência visual (entrega consolidada)
+- A aba Evolução reúne visão geral, desempenho por exercício, recordes, volume muscular, comparativos e calendário/relatórios.
+- O painel analítico apresenta oito semanas de treinos, séries efetivas, volume movimentado, tempo ativo, consistência, comparativo entre períodos, melhor semana e exercícios em destaque.
+- A evolução muscular apresenta distribuição e tendência semanal dos grupos oficiais; exercícios personalizados com grupo muscular definido também são considerados.
+- Foram adicionadas exportações analíticas em JSON e CSV, mantendo as exportações completas anteriores.
+- Nenhuma migração ou limpeza dos bancos locais foi realizada. Build, lint e homologação continuam pendentes para a etapa de testes acordada.
+- Consulte `CP09.3-RELATORIO-CONSOLIDADO.md` para regras de cálculo e escopo detalhado.
+
+## CP09.4 — Refinamento completo da interface
+
+- Base visual petróleo aplicada às superfícies globais e componentes compartilhados.
+- Tema OCEANO (verde elétrico) adicionado à biblioteca, preservando os seis temas existentes.
+- Tokens de superfície semânticos, foco acessível por teclado, navegação com rótulos acessíveis e suporte a movimento reduzido.
+- Cor do navegador/PWA sincronizada com o novo fundo petróleo.
+- Relatório completo: `CP09.4-RELATORIO-ATUALIZACAO-CONSOLIDADA.md`.
+- Build, lint e homologação permanecem reservados para a fase final de testes.

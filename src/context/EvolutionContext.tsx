@@ -7,8 +7,8 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { dbService } from '../services/db';
@@ -29,6 +29,7 @@ export interface EvolutionContextType {
   selectedTimeRange: EvolutionTimeRange;
   setSelectedTimeRange: (range: EvolutionTimeRange) => void;
   refreshMeasurements: () => Promise<void>;
+  ensureMeasurementsLoaded: () => Promise<void>;
   saveMeasurement: (item: BodyMeasurementItem) => Promise<void>;
   deleteMeasurement: (id: string) => Promise<void>;
   overallMetrics: OverallEvolutionMetrics;
@@ -44,21 +45,35 @@ export function EvolutionProvider({ children }: { children: React.ReactNode }) {
   const [measurements, setMeasurements] = useState<BodyMeasurementItem[]>([]);
   const [isLoadingMeasurements, setIsLoadingMeasurements] = useState<boolean>(true);
   const [selectedTimeRange, setSelectedTimeRange] = useState<EvolutionTimeRange>('30d');
+  const measurementsLoadedRef = useRef(false);
+  const measurementsLoadPromiseRef = useRef<Promise<void> | null>(null);
 
+  // Medidas corporais são dados de uma tela secundária. A leitura é adiada até
+  // o usuário abrir Evolução, evitando uma transação IndexedDB no boot inicial.
   const refreshMeasurements = useCallback(async () => {
-    try {
-      setIsLoadingMeasurements(true);
-      const items = await dbService.getBodyMeasurements();
-      setMeasurements(items);
-    } catch (err) {
-      console.error('Falha ao carregar medidas corporais:', err);
-    } finally {
-      setIsLoadingMeasurements(false);
-    }
+    if (measurementsLoadPromiseRef.current) return measurementsLoadPromiseRef.current;
+
+    setIsLoadingMeasurements(true);
+    const loadPromise = (async () => {
+      try {
+        const items = await dbService.getBodyMeasurements();
+        setMeasurements(items);
+        measurementsLoadedRef.current = true;
+      } catch (err) {
+        console.error('Falha ao carregar medidas corporais:', err);
+        throw err;
+      } finally {
+        setIsLoadingMeasurements(false);
+        measurementsLoadPromiseRef.current = null;
+      }
+    })();
+    measurementsLoadPromiseRef.current = loadPromise;
+    return loadPromise;
   }, []);
 
-  useEffect(() => {
-    refreshMeasurements();
+  const ensureMeasurementsLoaded = useCallback(async () => {
+    if (measurementsLoadedRef.current) return;
+    await refreshMeasurements();
   }, [refreshMeasurements]);
 
   const saveMeasurement = useCallback(
@@ -103,6 +118,7 @@ export function EvolutionProvider({ children }: { children: React.ReactNode }) {
         selectedTimeRange,
         setSelectedTimeRange,
         refreshMeasurements,
+        ensureMeasurementsLoaded,
         saveMeasurement,
         deleteMeasurement,
         overallMetrics,

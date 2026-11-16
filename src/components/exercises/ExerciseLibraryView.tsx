@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import {
   BookOpen,
   Building2,
@@ -34,8 +34,13 @@ import {
   isExternalVideoVerifiedAndValid,
 } from '../../constants/exercisesCatalog';
 import { ExerciseIllustration } from './ExerciseIllustration';
-import { ExerciseDetailModal } from './ExerciseDetailModal';
-import { CustomExerciseModal } from './CustomExerciseModal';
+// Modais são carregados apenas na primeira abertura, fora do carregamento da biblioteca.
+const ExerciseDetailModal = lazy(() =>
+  import('./ExerciseDetailModal').then((module) => ({ default: module.ExerciseDetailModal }))
+);
+const CustomExerciseModal = lazy(() =>
+  import('./CustomExerciseModal').then((module) => ({ default: module.CustomExerciseModal }))
+);
 
 interface ExerciseLibraryViewProps {
   onOpenEquipments?: () => void;
@@ -54,12 +59,19 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
     linkCustomEquipmentToExercise,
     unlinkCustomEquipmentFromExercise,
   } = useEquipments();
-  const { allExercises, customExercises } = useCustomExercises();
+  const { allExercises, customExercises, ensureCatalogLoaded, isCatalogLoaded } = useCustomExercises();
+
+  useEffect(() => {
+    void ensureCatalogLoaded().catch((error) => {
+      console.error('Falha ao carregar catálogo de exercícios:', error);
+    });
+  }, [ensureCatalogLoaded]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<'all' | MuscleGroupId>('all');
   const [onlyAvailableInGym, setOnlyAvailableInGym] = useState(false);
   const [onlyCustom, setOnlyCustom] = useState(false);
+  const [visibleExerciseCount, setVisibleExerciseCount] = useState(24);
   
   const [selectedExercise, setSelectedExercise] = useState<ExerciseItem | null>(null);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
@@ -96,6 +108,17 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
     explicitCustomCompatibilityMap,
   ]);
 
+  // Renderização progressiva: mantém a biblioteca completa, mas limita o DOM inicial.
+  // Ao alterar filtros/busca, volta ao primeiro lote para evitar listas vazias aparentes.
+  useEffect(() => {
+    setVisibleExerciseCount(24);
+  }, [searchQuery, selectedMuscleGroup, onlyAvailableInGym, onlyCustom]);
+
+  const visibleExercises = useMemo(
+    () => filteredExercises.slice(0, visibleExerciseCount),
+    [filteredExercises, visibleExerciseCount]
+  );
+
   const compatibleInCatalogCount = useMemo(
     () =>
       allExercises.filter((ex) =>
@@ -108,6 +131,17 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
       ).length,
     [allExercises, selectedIds, explicitCustomCompatibilityMap, customEquipments]
   );
+
+  if (!isCatalogLoaded) {
+    return (
+      <div className="min-h-[45vh] flex items-center justify-center px-6" role="status" aria-live="polite">
+        <div className="text-center space-y-2">
+          <div className="mx-auto h-8 w-8 rounded-full border-2 border-white/15 border-t-primary-app animate-spin" />
+          <p className="text-sm text-slate-400">Carregando biblioteca de exercícios...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-5 pb-28 space-y-5 animate-in fade-in duration-200">
@@ -335,7 +369,7 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
         </div>
       ) : (
         <div className="space-y-2.5">
-          {filteredExercises.map((exercise) => {
+          {visibleExercises.map((exercise) => {
             const primaryLabel =
               MUSCLE_GROUP_LABELS[exercise.primaryMuscleGroup] ||
               exercise.primaryMuscleGroup;
@@ -427,35 +461,54 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
               </button>
             );
           })}
+          {visibleExerciseCount < filteredExercises.length && (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => setVisibleExerciseCount((current) => Math.min(current + 24, filteredExercises.length))}
+                className="min-h-[42px] px-5 py-2 rounded-xl bg-surface-elevated border border-white/10 text-xs font-bold text-slate-200 hover:text-white hover:border-white/25 transition"
+                aria-label={`Carregar mais exercícios. ${filteredExercises.length - visibleExerciseCount} restantes`}
+              >
+                Carregar mais exercícios ({filteredExercises.length - visibleExerciseCount})
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Modal de Detalhes Completos do Exercício */}
-      <ExerciseDetailModal
-        exercise={selectedExercise}
-        isOpen={Boolean(selectedExercise)}
-        onClose={() => setSelectedExercise(null)}
-        customEquipments={customEquipments}
-        selectedEquipmentIds={selectedIds}
-        explicitCustomCompatibilityMap={explicitCustomCompatibilityMap}
-        onLinkCustomEquipment={linkCustomEquipmentToExercise}
-        onUnlinkCustomEquipment={unlinkCustomEquipmentFromExercise}
-        onOpenEquipments={onOpenEquipments}
-        onEditCustomExercise={(exToEdit) => {
-          setExerciseToEdit(exToEdit);
-          setIsCustomModalOpen(true);
-        }}
-      />
+      {/* Modais sob demanda: não entram no carregamento inicial da biblioteca. */}
+      {selectedExercise && (
+        <Suspense fallback={null}>
+          <ExerciseDetailModal
+            exercise={selectedExercise}
+            isOpen
+            onClose={() => setSelectedExercise(null)}
+            customEquipments={customEquipments}
+            selectedEquipmentIds={selectedIds}
+            explicitCustomCompatibilityMap={explicitCustomCompatibilityMap}
+            onLinkCustomEquipment={linkCustomEquipmentToExercise}
+            onUnlinkCustomEquipment={unlinkCustomEquipmentFromExercise}
+            onOpenEquipments={onOpenEquipments}
+            onEditCustomExercise={(exToEdit) => {
+              setExerciseToEdit(exToEdit);
+              setIsCustomModalOpen(true);
+            }}
+          />
+        </Suspense>
+      )}
 
-      {/* Modal de Criar / Editar Exercício Personalizado */}
-      <CustomExerciseModal
-        isOpen={isCustomModalOpen}
-        onClose={() => {
-          setIsCustomModalOpen(false);
-          setExerciseToEdit(null);
-        }}
-        exerciseToEdit={exerciseToEdit}
-      />
+      {isCustomModalOpen && (
+        <Suspense fallback={null}>
+          <CustomExerciseModal
+            isOpen
+            onClose={() => {
+              setIsCustomModalOpen(false);
+              setExerciseToEdit(null);
+            }}
+            exerciseToEdit={exerciseToEdit}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

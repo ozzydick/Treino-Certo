@@ -456,7 +456,7 @@ export function WorkoutPlanEditorModal({
                         onClick={() => setIsExerciseSelectorOpen(true)}
                         className="text-xs font-medium text-orange-400 hover:underline"
                       >
-                        Abrir catálogo oficial de 48 exercícios
+                        Abrir catálogo oficial ({DEFAULT_EXERCISES_CATALOG.length} exercícios)
                       </button>
                     </div>
                   ) : (

@@ -24,6 +24,7 @@ import { useCustomExercises } from '../../context/CustomExercisesContext';
 import { ExerciseItem, MUSCLE_GROUP_LABELS, MuscleGroupId } from '../../types';
 import { DEFAULT_EQUIPMENTS_CATALOG } from '../../constants/equipmentsCatalog';
 import { ORDERED_MUSCLE_GROUPS } from '../../constants/exercisesCatalog';
+import { compressImageFile } from '../../services/mediaDb';
 
 interface CustomExerciseModalProps {
   isOpen: boolean;
@@ -143,12 +144,15 @@ export const CustomExerciseModal: React.FC<CustomExerciseModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const file = input.files?.[0];
+    // Permite selecionar novamente o mesmo arquivo após uma tentativa anterior.
+    input.value = '';
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setFormError('Por favor selecione um arquivo de imagem válido (PNG, JPG, WebP).');
+      setFormError('Por favor selecione um arquivo de imagem válido (PNG, JPG ou WebP).');
       return;
     }
 
@@ -157,17 +161,20 @@ export const CustomExerciseModal: React.FC<CustomExerciseModalProps> = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setPhotoDataUrl(reader.result);
-        setFormError(null);
+    try {
+      // Fotos de exercícios também são persistidas no registro local do exercício.
+      // Redimensionar/comprimir antes de gerar o Data URL reduz IndexedDB/localStorage,
+      // o custo de serialização e o volume incluído em backups, sem alterar fotos antigas.
+      const compressedDataUrl = await compressImageFile(file, 720, 720, 0.78);
+      if (!compressedDataUrl.startsWith('data:image/')) {
+        throw new Error('Formato de imagem processado inválido.');
       }
-    };
-    reader.onerror = () => {
-      setFormError('Erro ao ler a imagem selecionada.');
-    };
-    reader.readAsDataURL(file);
+      setPhotoDataUrl(compressedDataUrl);
+      setFormError(null);
+    } catch (error) {
+      console.error('Falha ao comprimir imagem do exercício:', error);
+      setFormError('Não foi possível processar a imagem. Tente outro arquivo PNG, JPG ou WebP.');
+    }
   };
 
   const toggleSecondaryGroup = (group: MuscleGroupId) => {
@@ -545,7 +552,7 @@ export const CustomExerciseModal: React.FC<CustomExerciseModalProps> = ({
                   Carregar imagem do dispositivo
                 </span>
                 <span className="text-[10px] text-slate-400 mt-0.5">
-                  PNG, JPG ou WebP de até 5MB
+                  PNG, JPG ou WebP até 5MB · otimizada para 720px
                 </span>
                 <input
                   type="file"

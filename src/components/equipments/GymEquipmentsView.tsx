@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   ArrowLeft,
   Building2,
@@ -54,6 +54,7 @@ export const GymEquipmentsView: React.FC<Props> = ({ onBack }) => {
   const {
     equipments,
     photosMap,
+    loadEquipmentPhotos,
     isLoading,
     error: contextError,
     totalSelectedCount,
@@ -84,6 +85,12 @@ export const GymEquipmentsView: React.FC<Props> = ({ onBack }) => {
   const [customPhotoDataUrl, setCustomPhotoDataUrl] = useState<string | null>(null);
   const [customFormError, setCustomFormError] = useState<string | null>(null);
   const [isSubmittingCustom, setIsSubmittingCustom] = useState(false);
+
+  useEffect(() => {
+    void loadEquipmentPhotos().catch(() => {
+      showToast('Não foi possível carregar as fotos salvas.', 'info');
+    });
+  }, [loadEquipmentPhotos]);
 
   const customGalleryInputRef = useRef<HTMLInputElement | null>(null);
   const customCameraInputRef = useRef<HTMLInputElement | null>(null);

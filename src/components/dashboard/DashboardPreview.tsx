@@ -352,7 +352,7 @@ export const DashboardPreview: React.FC<Props> = ({ onNavigate, onOpenThemeModal
               CHECKPOINT 01 Auditado e Corrigido
             </h4>
             <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
-              Todos os dados fictícios foram eliminados. Identidade TREINO CERTO aplicada integralmente. Sistema de 6 temas funcionando offline com persistência IndexedDB validada e backup JSON atômico com suporte retroativo.
+              Todos os dados fictícios foram eliminados. Identidade TREINO CERTO aplicada integralmente. Sistema de 7 temas funcionando offline com persistência IndexedDB validada e backup JSON atômico com suporte retroativo.
             </p>
           </div>
         </div>

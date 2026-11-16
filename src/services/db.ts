@@ -1123,7 +1123,7 @@ export class FitAppDB {
             ) {
               return {
                 isValid: false,
-                error: `Tema "${String(typedRecord.theme)}" não homologado encontrado no backup. Os temas permitidos são: orange, green, blue, purple, red, gold.`,
+                error: `Tema "${String(typedRecord.theme)}" não homologado encontrado no backup. Os temas permitidos são: orange, green, blue, purple, red, gold, ocean.`,
               };
             }
             themeFound = typedRecord.theme as string;

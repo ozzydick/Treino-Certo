@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type ThemeId = 'orange' | 'green' | 'blue' | 'purple' | 'red' | 'gold';
+export type ThemeId = 'orange' | 'green' | 'blue' | 'purple' | 'red' | 'gold' | 'ocean';
 
 export interface ThemeConfig {
   id: ThemeId;
@@ -247,8 +247,13 @@ export interface WorkoutPlanExercise {
   instructorNotes?: string;
 }
 
+export type WorkoutSetType = 'warmup' | 'working' | 'drop' | 'failure';
+
 export interface WorkoutSessionSetLog {
   setNumber: number;
+  setType?: WorkoutSetType;
+  effortRpe?: number;
+  effortRir?: number;
   prescribedReps: string;
   prescribedWeightKg?: number;
   actualReps: number;
@@ -257,8 +262,14 @@ export interface WorkoutSessionSetLog {
   completedAt?: string;
 }
 
+export type WorkoutGroupType = 'superset' | 'circuit';
+
 export interface WorkoutSessionExerciseLog {
   exerciseId: string;
+  /** Grupo de execução opcional; ausente em sessões antigas. */
+  groupId?: string;
+  groupType?: WorkoutGroupType;
+  groupOrder?: number;
   exerciseName: string;
   order: number;
   skipped?: boolean;

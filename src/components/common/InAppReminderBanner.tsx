@@ -60,7 +60,7 @@ export const InAppReminderBanner: React.FC<Props> = ({ onNavigate }) => {
 
   return (
     <div className="sticky top-16 z-30 w-full px-4 py-2 animate-in slide-in-from-top duration-300">
-      <div className="max-w-4xl mx-auto p-4 rounded-2xl bg-[#121820] border border-amber-500/30 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-hidden">
+      <div className="max-w-4xl mx-auto p-4 rounded-2xl bg-surface-card border border-amber-500/30 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-hidden">
         <div
           className="absolute -left-10 -top-10 w-32 h-32 rounded-full blur-2xl opacity-20 pointer-events-none"
           style={{ backgroundColor: themeConfig.primaryHex }}

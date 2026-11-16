@@ -17,7 +17,64 @@ interface EquipmentIllustrationProps {
   className?: string;
 }
 
-export const EquipmentIllustration: React.FC<EquipmentIllustrationProps> = ({
+const REALISTIC_EQUIPMENT_IMAGES: Record<string, { src: string; width: number; height: number }> = {
+  std_chest_supino_reto_barra: { src: '/images/equipments/3d/std_chest_supino_reto_barra.webp', width: 1200, height: 675 },
+  std_chest_supino_inclinado_barra: { src: '/images/equipments/3d/std_chest_supino_inclinado_barra.webp', width: 506, height: 506 },
+  std_chest_supino_declinado: { src: '/images/equipments/3d/std_chest_supino_declinado.webp', width: 506, height: 506 },
+  std_chest_supino_maquina: { src: '/images/equipments/3d/std_chest_supino_maquina.webp', width: 506, height: 506 },
+  std_chest_peck_deck: { src: '/images/equipments/3d/std_chest_peck_deck.webp', width: 506, height: 506 },
+  std_chest_crossover: { src: '/images/equipments/3d/std_chest_crossover.webp', width: 506, height: 506 },
+  std_chest_crucifixo_maquina: { src: '/images/equipments/3d/std_chest_crucifixo_maquina.webp', width: 506, height: 506 },
+  std_back_puxada_alta: { src: '/images/equipments/3d/std_back_puxada_alta.webp', width: 304, height: 718 },
+  std_back_remada_baixa: { src: '/images/equipments/3d/std_back_remada_baixa.webp', width: 305, height: 718 },
+  std_back_remada_articulada: { src: '/images/equipments/3d/std_back_remada_articulada.webp', width: 304, height: 718 },
+  std_back_remada_cavalinho: { src: '/images/equipments/3d/std_back_remada_cavalinho.webp', width: 304, height: 718 },
+  std_back_pulldown: { src: '/images/equipments/3d/std_back_pulldown.webp', width: 304, height: 718 },
+  std_back_barra_fixa: { src: '/images/equipments/3d/std_back_barra_fixa.webp', width: 305, height: 718 },
+  std_back_graviton: { src: '/images/equipments/3d/std_back_graviton.webp', width: 304, height: 718 },
+  std_legs_leg_press_45: { src: '/images/equipments/3d/std_legs_leg_press_45.webp', width: 304, height: 356 },
+  std_legs_leg_press_horizontal: { src: '/images/equipments/3d/std_legs_leg_press_horizontal.webp', width: 305, height: 356 },
+  std_legs_cadeira_extensora: { src: '/images/equipments/3d/std_legs_cadeira_extensora.webp', width: 304, height: 356 },
+  std_legs_mesa_flexora: { src: '/images/equipments/3d/std_legs_mesa_flexora.webp', width: 304, height: 356 },
+  std_legs_cadeira_flexora: { src: '/images/equipments/3d/std_legs_cadeira_flexora.webp', width: 304, height: 356 },
+  std_legs_cadeira_abdutora: { src: '/images/equipments/3d/std_legs_cadeira_abdutora.webp', width: 305, height: 356 },
+  std_legs_cadeira_adutora: { src: '/images/equipments/3d/std_legs_cadeira_adutora.webp', width: 304, height: 356 },
+  std_legs_hack_squat: { src: '/images/equipments/3d/std_legs_hack_squat.webp', width: 304, height: 356 },
+  std_legs_smith_machine: { src: '/images/equipments/3d/std_legs_smith_machine.webp', width: 305, height: 356 },
+  std_legs_agachamento_livre_rack: { src: '/images/equipments/3d/std_legs_agachamento_livre_rack.webp', width: 304, height: 356 },
+  std_legs_panturrilha_sentada: { src: '/images/equipments/3d/std_legs_panturrilha_sentada.webp', width: 304, height: 356 },
+  std_legs_panturrilha_em_pe: { src: '/images/equipments/3d/std_legs_panturrilha_em_pe.webp', width: 304, height: 356 },
+  std_legs_glute_drive: { src: '/images/equipments/3d/std_legs_glute_drive.webp', width: 305, height: 356 },
+  std_legs_maquina_gluteo: { src: '/images/equipments/3d/std_legs_maquina_gluteo.webp', width: 304, height: 356 },
+  std_shoulders_desenvolvimento_maquina: { src: '/images/equipments/3d/std_shoulders_desenvolvimento_maquina.webp', width: 222, height: 227 },
+  std_shoulders_desenvolvimento_halteres: { src: '/images/equipments/3d/std_shoulders_desenvolvimento_halteres.webp', width: 218, height: 227 },
+  std_shoulders_elevacao_lateral_maquina: { src: '/images/equipments/3d/std_shoulders_elevacao_lateral_maquina.webp', width: 219, height: 227 },
+  std_shoulders_maquina_elevacao_lateral: { src: '/images/equipments/3d/std_shoulders_maquina_elevacao_lateral.webp', width: 220, height: 227 },
+  std_shoulders_banco_desenvolvimento: { src: '/images/equipments/3d/std_shoulders_banco_desenvolvimento.webp', width: 219, height: 227 },
+  std_arms_maquina_biceps: { src: '/images/equipments/3d/std_arms_maquina_biceps.webp', width: 252, height: 227 },
+  std_arms_banco_scott: { src: '/images/equipments/3d/std_arms_banco_scott.webp', width: 222, height: 220 },
+  std_arms_polia_triceps: { src: '/images/equipments/3d/std_arms_polia_triceps.webp', width: 218, height: 220 },
+  std_arms_maquina_triceps: { src: '/images/equipments/3d/std_arms_maquina_triceps.webp', width: 219, height: 220 },
+  std_arms_barras_puxadores_polia: { src: '/images/equipments/3d/std_arms_barras_puxadores_polia.webp', width: 220, height: 220 },
+  std_general_halteres: { src: '/images/equipments/3d/std_general_halteres.webp', width: 219, height: 220 },
+  std_general_barras_retas: { src: '/images/equipments/3d/std_general_barras_retas.webp', width: 252, height: 220 },
+  std_general_barras_w: { src: '/images/equipments/3d/std_general_barras_w.webp', width: 222, height: 221 },
+  std_general_anilhas: { src: '/images/equipments/3d/std_general_anilhas.webp', width: 218, height: 221 },
+  std_general_bancos_retos: { src: '/images/equipments/3d/std_general_bancos_retos.webp', width: 219, height: 221 },
+  std_general_bancos_regulaveis: { src: '/images/equipments/3d/std_general_bancos_regulaveis.webp', width: 220, height: 221 },
+  std_general_rack_agachamento: { src: '/images/equipments/3d/std_general_rack_agachamento.webp', width: 219, height: 221 },
+  std_general_polias_ajustaveis: { src: '/images/equipments/3d/std_general_polias_ajustaveis.webp', width: 252, height: 221 },
+  std_general_colchonetes: { src: '/images/equipments/3d/std_general_colchonetes.webp', width: 222, height: 226 },
+  std_general_kettlebells: { src: '/images/equipments/3d/std_general_kettlebells.webp', width: 218, height: 226 },
+  std_general_elasticos_resistencia: { src: '/images/equipments/3d/std_general_elasticos_resistencia.webp', width: 219, height: 226 },
+  std_cardio_esteira: { src: '/images/equipments/3d/std_cardio_esteira.webp', width: 220, height: 226 },
+  std_cardio_bicicleta_ergometrica: { src: '/images/equipments/3d/std_cardio_bicicleta_ergometrica.webp', width: 219, height: 226 },
+  std_cardio_spinning: { src: '/images/equipments/3d/std_cardio_spinning.webp', width: 252, height: 226 },
+  std_cardio_eliptico: { src: '/images/equipments/3d/std_cardio_eliptico.webp', width: 222, height: 231 },
+  std_cardio_simulador_escada: { src: '/images/equipments/3d/std_cardio_simulador_escada.webp', width: 218, height: 231 },
+};
+
+export const EquipmentIllustration = React.memo<EquipmentIllustrationProps>(({
   equipmentId,
   category,
   name,
@@ -37,6 +94,8 @@ export const EquipmentIllustration: React.FC<EquipmentIllustrationProps> = ({
           alt={name || 'Foto do equipamento personalizado'}
           className="w-full h-full object-cover"
           loading="lazy"
+          decoding="async"
+          fetchPriority="low"
         />
         <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[9px] font-semibold text-white/90 flex items-center gap-1 border border-white/10">
           <Camera className="w-2.5 h-2.5 text-orange-400" />
@@ -69,7 +128,34 @@ export const EquipmentIllustration: React.FC<EquipmentIllustrationProps> = ({
     );
   }
 
-  // Para o catálogo padrão de 54 equipamentos: Renderiza a representação vetorial SVG correspondente
+  // Imagens 3D realistas do catálogo oficial. A lista é incremental:
+  // equipamentos ainda sem render 3D individual aprovado mantêm o SVG vetorial original.
+
+
+  const realisticImage = REALISTIC_EQUIPMENT_IMAGES[equipmentId];
+
+  if (realisticImage) {
+    return (
+      <div
+        className={`relative overflow-hidden bg-surface-input flex items-center justify-center rounded-xl border border-white/10 ${className}`}
+        title={name}
+      >
+        <img
+          src={realisticImage.src}
+          width={realisticImage.width}
+          height={realisticImage.height}
+          alt={name || 'Equipamento de academia'}
+          className="w-full h-full object-contain"
+          loading="lazy"
+          decoding="async"
+          fetchPriority="low"
+        />
+      </div>
+    );
+  }
+
+  // Os demais equipamentos preservam a ilustração vetorial até receberem
+  // uma imagem 3D individual revisada e associada ao ID correto.
   return (
     <div
       className={`relative overflow-hidden bg-gradient-to-b from-surface-elevated via-surface-card to-surface-dark flex items-center justify-center rounded-xl border border-white/10 ${className}`}
@@ -78,7 +164,9 @@ export const EquipmentIllustration: React.FC<EquipmentIllustrationProps> = ({
       <StandardEquipmentSvg id={equipmentId} category={category} name={name} size={size} />
     </div>
   );
-};
+});
+
+EquipmentIllustration.displayName = 'EquipmentIllustration';
 
 /**
  * Renderizador de arte vetorial SVG offline e autossuficiente para cada equipamento padrão

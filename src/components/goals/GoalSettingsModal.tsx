@@ -114,7 +114,7 @@ export const GoalSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl bg-[#0F141C] border border-white/10 shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl bg-surface-input border border-white/10 shadow-2xl overflow-hidden">
         {/* Modal Header */}
         <div className="flex items-center justify-between p-5 border-b border-white/10 shrink-0">
           <div>
@@ -172,7 +172,7 @@ export const GoalSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         className={`py-2 rounded-xl font-bold text-xs transition border ${
                           targetPerWeek === num
                             ? 'bg-primary-surface text-primary-app border-primary-app'
-                            : 'bg-[#0B0F14] text-slate-400 border-white/5 hover:text-white'
+                            : 'bg-surface-input text-slate-400 border-white/5 hover:text-white'
                         }`}
                       >
                         {num}x
@@ -197,7 +197,7 @@ export const GoalSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                           className={`py-2 rounded-xl text-xs font-semibold transition border ${
                             isSelected
                               ? 'bg-surface-elevated text-white border-primary-app'
-                              : 'bg-[#0B0F14] text-slate-500 border-white/5 hover:text-slate-300'
+                              : 'bg-surface-input text-slate-500 border-white/5 hover:text-slate-300'
                           }`}
                         >
                           {day.label}
@@ -217,7 +217,7 @@ export const GoalSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0F14] border border-white/10 text-xs text-white focus:outline-none focus:border-primary-app"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-input border border-white/10 text-xs text-white focus:outline-none focus:border-primary-app"
                   />
                 </div>
               </div>
@@ -262,7 +262,7 @@ export const GoalSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                           className={`py-2 rounded-xl text-xs font-semibold transition border ${
                             isSelected
                               ? 'bg-amber-500/15 text-amber-400 border-amber-500/40'
-                              : 'bg-[#0B0F14] text-slate-500 border-white/5 hover:text-slate-300'
+                              : 'bg-surface-input text-slate-500 border-white/5 hover:text-slate-300'
                           }`}
                         >
                           {day.label}
@@ -282,7 +282,7 @@ export const GoalSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     type="time"
                     value={reminderTime}
                     onChange={(e) => setReminderTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0F14] border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-input border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
@@ -297,7 +297,7 @@ export const GoalSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     placeholder="Ex: Hora de treinar! Foco nos objetivos."
                     value={reminderMessage}
                     onChange={(e) => setReminderMessage(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0F14] border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400 placeholder:text-slate-600"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-input border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400 placeholder:text-slate-600"
                   />
                 </div>
 

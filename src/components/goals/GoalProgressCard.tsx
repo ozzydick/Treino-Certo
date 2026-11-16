@@ -78,7 +78,7 @@ export const GoalProgressCard: React.FC<Props> = ({ onOpenSettings }) => {
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-3 rounded-full bg-[#0B0F14] border border-white/5 overflow-hidden">
+        <div className="w-full h-3 rounded-full bg-surface-input border border-white/5 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
@@ -129,7 +129,7 @@ export const GoalProgressCard: React.FC<Props> = ({ onOpenSettings }) => {
                   className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${
                     isPreferred
                       ? 'bg-primary-surface text-primary-app border-primary-app'
-                      : 'bg-[#0B0F14] text-slate-600 border-white/5'
+                      : 'bg-surface-input text-slate-600 border-white/5'
                   }`}
                 >
                   {WEEK_DAY_LABELS[dayId]}

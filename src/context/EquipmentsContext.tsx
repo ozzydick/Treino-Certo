@@ -3,18 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { dbService } from '../services/db';
 import { EquipmentCategory, GymEquipmentItem } from '../types';
 import {
   checkDuplicateEquipment,
   DEFAULT_EQUIPMENTS_CATALOG,
 } from '../constants/equipmentsCatalog';
-import {
-  buildExplicitCustomCompatibilityMap,
-  DEFAULT_EXERCISES_CATALOG,
-  ExplicitCustomCompatibilityMap,
-} from '../constants/exercisesCatalog';
+import { buildExplicitCustomCompatibilityMap } from '../constants/exerciseCatalogMeta';
+import type { ExplicitCustomCompatibilityMap } from '../constants/exerciseCatalogMeta';
 
 interface EquipmentsContextType {
   equipments: GymEquipmentItem[];
@@ -57,6 +54,7 @@ interface EquipmentsContextType {
   deleteEquipmentPhoto: (id: string) => Promise<void>;
   clearAllSelections: () => Promise<void>;
   reloadEquipments: () => Promise<void>;
+  loadEquipmentPhotos: () => Promise<void>;
 }
 
 const EquipmentsContext = createContext<EquipmentsContextType | undefined>(undefined);
@@ -64,6 +62,8 @@ const EquipmentsContext = createContext<EquipmentsContextType | undefined>(undef
 export const EquipmentsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [equipments, setEquipments] = useState<GymEquipmentItem[]>([]);
   const [photosMap, setPhotosMap] = useState<Record<string, string>>({});
+  const [photosLoaded, setPhotosLoaded] = useState(false);
+  const photosLoadPromiseRef = useRef<Promise<void> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,12 +73,6 @@ export const EquipmentsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const data = await dbService.getEquipments();
       setEquipments(data);
-      try {
-        const photos = await dbService.getAllEquipmentPhotos();
-        setPhotosMap(photos || {});
-      } catch (photoErr) {
-        console.warn('Falha ao carregar fotos de equipamentos:', photoErr);
-      }
     } catch (err) {
       console.error('Falha ao carregar equipamentos do IndexedDB:', err);
       setError('Não foi possível carregar os equipamentos salvos no banco local.');
@@ -90,6 +84,29 @@ export const EquipmentsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     loadEquipmentsFromDB();
   }, [loadEquipmentsFromDB]);
+
+  // Fotos personalizadas são carregadas somente quando a tela Minha Academia é aberta.
+  // Isso evita ler Data URLs do banco de mídia durante a inicialização do dashboard.
+  const loadEquipmentPhotos = useCallback(async () => {
+    if (photosLoaded) return;
+    if (photosLoadPromiseRef.current) return photosLoadPromiseRef.current;
+
+    const loadPromise = (async () => {
+      try {
+        const photos = await dbService.getAllEquipmentPhotos();
+        setPhotosMap(photos || {});
+        setPhotosLoaded(true);
+      } catch (photoErr) {
+        console.warn('Falha ao carregar fotos de equipamentos:', photoErr);
+        throw photoErr;
+      } finally {
+        photosLoadPromiseRef.current = null;
+      }
+    })();
+
+    photosLoadPromiseRef.current = loadPromise;
+    return loadPromise;
+  }, [photosLoaded]);
 
   // Considera selecionado quando isSelected !== false (registros legados sem isSelected continuam selecionados)
   const selectedIds = useMemo(() => {
@@ -346,6 +363,7 @@ export const EquipmentsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         };
       }
 
+      const { DEFAULT_EXERCISES_CATALOG } = await import('../constants/exercisesCatalog');
       const validExercise = DEFAULT_EXERCISES_CATALOG.some((ex) => ex.id === exerciseId);
       if (!validExercise) {
         return {
@@ -486,6 +504,7 @@ export const EquipmentsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       deleteEquipmentPhoto,
       clearAllSelections,
       reloadEquipments: loadEquipmentsFromDB,
+      loadEquipmentPhotos,
     }),
     [
       equipments,
@@ -507,6 +526,7 @@ export const EquipmentsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       deleteEquipmentPhoto,
       clearAllSelections,
       loadEquipmentsFromDB,
+      loadEquipmentPhotos,
     ]
   );
 

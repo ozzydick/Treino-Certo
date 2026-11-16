@@ -118,7 +118,7 @@ async function runCheckpoint03TestSuite() {
     (ex) => ex.primaryMuscleGroup === 'costas'
   );
   const costasExpansionOk =
-    costasExercises.length === 8 &&
+    costasExercises.length >= 20 &&
     expectedCostasIds.every((id, idx) => costasExercises[idx]?.id === id) &&
     newCostasIds.every((id) => {
       const ex = getExerciseById(id);
@@ -134,11 +134,11 @@ async function runCheckpoint03TestSuite() {
   assert(
     costasExpansionOk,
     'TESTE 01B',
-    'Expansão do Grupo Muscular Costas (4 Originais Preservados + 4 Novos com 4 Passos de Execução = 8)',
+    'Expansão do Grupo Muscular Costas (itens originais preservados e catálogo ampliado)',
     `Exercícios de Costas verificados: ${costasExercises.map((e) => e.id).join(', ')}.`
   );
 
-  // Verificação específica da expansão de Pernas (Quadríceps: 4, Posterior de coxa: 5, Glúteos: 3, Panturrilhas: 4)
+  // Verificação dos grupos de membros inferiores após as expansões incrementais
   const expectedPosteriorIds = [
     'ex_posterior_mesa_flexora',
     'ex_posterior_cadeira_flexora',
@@ -190,9 +190,9 @@ async function runCheckpoint03TestSuite() {
 
   const legsExpansionOk =
     quadricepsExercises.length >= 4 &&
-    posteriorExercises.length === 5 &&
-    gluteosExercises.length === 3 &&
-    panturrilhasExercises.length >= 4 &&
+    posteriorExercises.length >= 18 &&
+    gluteosExercises.length >= 16 &&
+    panturrilhasExercises.length >= 12 &&
     expectedPosteriorIds.every((id, idx) => posteriorExercises[idx]?.id === id) &&
     expectedPanturrilhasIds.every((id) => panturrilhasExercises.some((ex) => ex.id === id)) &&
     newLegsSpecs.every((spec) => {
@@ -298,12 +298,12 @@ async function runCheckpoint03TestSuite() {
     isExerciseCompatibleWithGym(exPeitoFlexaoBracos, new Set()) === true;
 
   assert(
-    peitoExercises.length === 8 &&
+    peitoExercises.length >= 18 &&
       expectedPeitoIds.every((id, idx) => peitoExercises[idx]?.id === id) &&
       peitoNewExercisesStructureOk &&
       peitoEquipmentRulesOk,
     'TESTE 01D',
-    'Expansão do Catálogo de Peito (4 Originais Preservados + 4 Novos = 8 Exercícios e Regras de Compatibilidade)',
+    'Expansão do Catálogo de Peito (itens originais preservados, expansão progressiva e regras de compatibilidade)',
     `Exercícios de Peito verificados: ${peitoExercises.map((e) => e.id).join(', ')}.`
   );
 
@@ -500,7 +500,7 @@ async function runCheckpoint03TestSuite() {
       searchSupino.every((ex) => ex.name.toLowerCase().includes('supino')) &&
       searchElevacaoSemAcento.length === 1 &&
       searchElevacaoSemAcento[0].id === 'ex_gluteos_elevacao_pelvica_maquina' &&
-      searchPanturrilha.length === 5 &&
+      searchPanturrilha.length >= 5 &&
       searchInexistente.length === 0,
     'TESTE 06',
     'Pesquisa por Nome do Exercício (Maiúsculas/Minúsculas, Acentos e Termos Parciais)',
@@ -735,6 +735,32 @@ async function runCheckpoint03TestSuite() {
     `Todos os 16 arquivos .webp de Pernas verificados em public/images/exercises/ e mapeados com object-contain: ${pernasVisualMapOk}`
   );
 
+  // TESTE 09H: imagens do Bloco 04 — Glúteos e Panturrilhas.
+  const bloco04ImageIds = [
+    'ex_gluteos_hip_thrust_unilateral', 'ex_gluteos_ponte_gluteos_solo',
+    'ex_gluteos_ponte_gluteos_unilateral', 'ex_gluteos_coice_polia_unilateral',
+    'ex_gluteos_abducao_quadril_polia', 'ex_gluteos_abducao_quadril_elastico',
+    'ex_gluteos_pull_through_polia', 'ex_gluteos_terra_sumo_kettlebell',
+    'ex_gluteos_passada_lateral_halteres', 'ex_gluteos_step_up_lateral',
+    'ex_gluteos_frog_pump', 'ex_gluteos_clam_shell_elastico',
+    'ex_gluteos_extensao_quadril_banco_45',
+    'ex_panturrilhas_em_pe_smith', 'ex_panturrilhas_donkey_raise',
+    'ex_panturrilhas_unilateral_peso_corporal', 'ex_panturrilhas_sentado_halteres',
+    'ex_panturrilhas_leg_press_horizontal', 'ex_panturrilhas_hack_machine',
+    'ex_panturrilhas_isometria_degrau',
+  ];
+  const bloco04ImagesOk = bloco04ImageIds.every((id) => {
+    const fileUrl = new URL(`../public/images/exercises/${id}.webp`, import.meta.url);
+    return fs.existsSync(fileUrl) && fs.statSync(fileUrl).size > 5000 &&
+      illustrationSource.includes(`${id}: '/images/exercises/${id}.webp'`);
+  });
+  assert(
+    bloco04ImagesOk,
+    'TESTE 09H',
+    '20 imagens WebP individuais do Bloco 04 presentes e mapeadas',
+    `Arquivos e mapeamentos conferidos: ${bloco04ImageIds.length}; resultado: ${bloco04ImagesOk}`
+  );
+
   // TESTE 09F: imagens 3D do Lote Superiores devem estar registradas e presentes em public/images/exercises/ para todos os 10 exercícios de Ombros, Bíceps e Tríceps.
   const expectedSuperioresWebpIds = [
     'ex_ombros_desenvolvimento_halteres',
@@ -893,7 +919,7 @@ async function runCheckpoint03TestSuite() {
     noExternalImageUrlsInCatalog && allIllustrationsRenderLocallyWithoutNetwork,
     'TESTE 11',
     'Catálogo Estático Local e Renderização de Ilustrações SVG/Placeholders sem Requisição de Rede (Escopo Node.js)',
-    'Dados em estruturas estáticas locais e 48 ilustrações/placeholders renderizados em memória sem dependência de URLs externas de imagem.'
+    'Dados em estruturas estáticas locais e 109 ilustrações locais renderizadas em memória sem dependência de URLs externas de imagem.'
   );
 
   // ===========================================================================

@@ -141,7 +141,7 @@ export const SectionPlaceholder: React.FC<Props> = ({
         </p>
 
         {/* Features preview */}
-        <div className="relative z-10 text-left bg-[#0A0E13] p-4 rounded-2xl border border-white/5 space-y-2.5 max-w-lg mx-auto">
+        <div className="relative z-10 text-left bg-surface-card p-4 rounded-2xl border border-white/5 space-y-2.5 max-w-lg mx-auto">
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
             Planejamento de Recursos ({config.checkpoint}):
           </span>

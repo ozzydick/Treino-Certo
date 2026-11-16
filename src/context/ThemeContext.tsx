@@ -30,7 +30,7 @@ function applyThemeTokens(theme: ThemeConfig) {
 
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
   if (metaThemeColor) {
-    metaThemeColor.setAttribute('content', '#0B0F12');
+    metaThemeColor.setAttribute('content', '#061A1C');
   }
 }
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   TrendingUp,
   Activity,
@@ -25,11 +25,13 @@ import {
   Target,
   Sparkles,
   ArrowRight,
+  BarChart3,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useEvolution } from '../../context/EvolutionContext';
-import { BodyMeasurementItem, EvolutionTimeRange, NavigationTab } from '../../types';
+import { useCustomExercises } from '../../context/CustomExercisesContext';
+import { BodyMeasurementItem, EvolutionTimeRange, MuscleGroupId, NavigationTab } from '../../types';
 import { SvgLineChart } from './SvgLineChart';
 import { MeasurementModal } from './MeasurementModal';
 import { ActivityCalendar } from './ActivityCalendar';
@@ -38,6 +40,12 @@ import {
   compareBodyAssessments,
 } from '../../utils/evolutionCalculator';
 import { DEFAULT_EXERCISES_CATALOG } from '../../constants/exercisesCatalog';
+import { calculateMuscleVolume } from '../../utils/muscleVolumeCalculator';
+import {
+  buildWorkoutPerformanceInsights,
+  exportWorkoutPerformanceCsv,
+  exportWorkoutPerformanceJson,
+} from '../../utils/workoutPerformanceInsights';
 
 interface EvolutionViewProps {
   onNavigate: (tab: NavigationTab) => void;
@@ -47,8 +55,10 @@ interface EvolutionViewProps {
 export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
   const { themeConfig } = useTheme();
   const { sessionsHistory } = useWorkout();
+  const { customExercises } = useCustomExercises();
   const {
     measurements,
+    ensureMeasurementsLoaded,
     selectedTimeRange,
     setSelectedTimeRange,
     saveMeasurement,
@@ -59,10 +69,17 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
     exportCsv,
   } = useEvolution();
 
+  useEffect(() => {
+    void ensureMeasurementsLoaded().catch(() => {
+      // A falha permanece recuperável; a próxima entrada pode tentar novamente.
+    });
+  }, [ensureMeasurementsLoaded]);
+
   // Sub-tabs dentro de Evolução
   const [activeSubTab, setActiveSubTab] = useState<
-    'overview' | 'body' | 'performance' | 'records' | 'reports'
+    'overview' | 'body' | 'performance' | 'records' | 'volume' | 'reports'
   >('overview');
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<MuscleGroupId>('peito');
 
   // Modal de medidas corporais
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,6 +113,46 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
   const activeExerciseId =
     selectedExerciseId ||
     (exercisesWithHistory.length > 0 ? exercisesWithHistory[0].id : DEFAULT_EXERCISES_CATALOG[0].id);
+
+  const muscleVolume = useMemo(
+    () => calculateMuscleVolume(sessionsHistory, Date.now(), 8, customExercises),
+    [sessionsHistory, customExercises]
+  );
+
+  const performanceInsights = useMemo(
+    () => buildWorkoutPerformanceInsights(sessionsHistory),
+    [sessionsHistory]
+  );
+
+  // Detalhamento da evolução por grupo: compara as quatro semanas mais recentes
+  // com as quatro anteriores, usando exatamente as séries efetivas do relatório.
+  const selectedMuscle = muscleVolume.rows.find((row) => row.muscleGroup === selectedMuscleGroup)
+    || muscleVolume.rows[0];
+  const selectedMuscleTrend = useMemo(() => {
+    const points = muscleVolume.weeks.map((week) => ({
+      weekStart: week.weekStart,
+      label: week.label,
+      sets: week.byMuscle[selectedMuscleGroup] || 0,
+    }));
+    const previous = points.slice(0, 4);
+    const current = points.slice(-4);
+    const previousTotal = previous.reduce((sum, point) => sum + point.sets, 0);
+    const currentTotal = current.reduce((sum, point) => sum + point.sets, 0);
+    const previousAverage = previous.length ? previousTotal / previous.length : 0;
+    const currentAverage = current.length ? currentTotal / current.length : 0;
+    const deltaPercent = previousTotal > 0
+      ? ((currentTotal - previousTotal) / previousTotal) * 100
+      : null;
+    return {
+      points,
+      previousTotal,
+      currentTotal,
+      previousAverage,
+      currentAverage,
+      deltaPercent,
+      direction: currentTotal > previousTotal ? 'up' : currentTotal < previousTotal ? 'down' : 'stable',
+    } as const;
+  }, [muscleVolume.weeks, selectedMuscleGroup]);
 
   const exerciseEvolution = useMemo(() => {
     return calculateExerciseEvolution(activeExerciseId, sessionsHistory);
@@ -138,6 +195,28 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
     const a = document.createElement('a');
     a.href = url;
     a.download = `treino-certo-relatorio-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadPerformanceJson = () => {
+    const content = exportWorkoutPerformanceJson(performanceInsights, muscleVolume.rows);
+    const blob = new Blob([content], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `treino-certo-desempenho-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadPerformanceCsv = () => {
+    const content = exportWorkoutPerformanceCsv(performanceInsights, muscleVolume.rows);
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `treino-certo-desempenho-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -245,6 +324,7 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
           { id: 'body', label: 'Medidas Corporais', icon: Scale },
           { id: 'performance', label: 'Desempenho por Exercício', icon: Dumbbell },
           { id: 'records', label: 'Recordes Pessoais', icon: Trophy },
+          { id: 'volume', label: 'Volume Muscular', icon: BarChart3 },
           { id: 'reports', label: 'Calendário & Relatórios', icon: Calendar },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -278,7 +358,7 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
           {/* Time range selector pills */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-xs font-semibold text-slate-400">Filtrar por período:</span>
-            <div className="flex items-center gap-1 bg-[#0A0E13] p-1 rounded-xl border border-white/5">
+            <div className="flex items-center gap-1 bg-surface-card p-1 rounded-xl border border-white/5">
               {timeRangeOptions.map((opt) => {
                 const isSelected = selectedTimeRange === opt.id;
                 return (
@@ -713,7 +793,7 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
                           {m.date.split('-').reverse().join('/')}
                         </span>
                         {m.weightKg && (
-                          <span className="px-2 py-0.5 rounded-md bg-[#121820] text-primary-app text-xs font-bold border border-white/5">
+                          <span className="px-2 py-0.5 rounded-md bg-surface-card text-primary-app text-xs font-bold border border-white/5">
                             {m.weightKg} kg
                           </span>
                         )}
@@ -734,25 +814,25 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
                     {/* Circumferences list */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                       {m.waistCm && (
-                        <div className="p-2 rounded-xl bg-[#0A0E13] border border-white/5">
+                        <div className="p-2 rounded-xl bg-surface-card border border-white/5">
                           <span className="text-[10px] text-slate-400 block">Cintura</span>
                           <span className="font-bold text-white">{m.waistCm} cm</span>
                         </div>
                       )}
                       {m.abdomenCm && (
-                        <div className="p-2 rounded-xl bg-[#0A0E13] border border-white/5">
+                        <div className="p-2 rounded-xl bg-surface-card border border-white/5">
                           <span className="text-[10px] text-slate-400 block">Abdômen</span>
                           <span className="font-bold text-white">{m.abdomenCm} cm</span>
                         </div>
                       )}
                       {m.chestCm && (
-                        <div className="p-2 rounded-xl bg-[#0A0E13] border border-white/5">
+                        <div className="p-2 rounded-xl bg-surface-card border border-white/5">
                           <span className="text-[10px] text-slate-400 block">Peito</span>
                           <span className="font-bold text-white">{m.chestCm} cm</span>
                         </div>
                       )}
                       {(m.armRightCm || m.armLeftCm) && (
-                        <div className="p-2 rounded-xl bg-[#0A0E13] border border-white/5">
+                        <div className="p-2 rounded-xl bg-surface-card border border-white/5">
                           <span className="text-[10px] text-slate-400 block">Braços (D / E)</span>
                           <span className="font-bold text-white">
                             {m.armRightCm ?? '—'} / {m.armLeftCm ?? '—'} cm
@@ -760,7 +840,7 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
                         </div>
                       )}
                       {(m.thighRightCm || m.thighLeftCm) && (
-                        <div className="p-2 rounded-xl bg-[#0A0E13] border border-white/5">
+                        <div className="p-2 rounded-xl bg-surface-card border border-white/5">
                           <span className="text-[10px] text-slate-400 block">Coxas (D / E)</span>
                           <span className="font-bold text-white">
                             {m.thighRightCm ?? '—'} / {m.thighLeftCm ?? '—'} cm
@@ -768,7 +848,7 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
                         </div>
                       )}
                       {(m.calfRightCm || m.calfLeftCm) && (
-                        <div className="p-2 rounded-xl bg-[#0A0E13] border border-white/5">
+                        <div className="p-2 rounded-xl bg-surface-card border border-white/5">
                           <span className="text-[10px] text-slate-400 block">Panturrilhas (D / E)</span>
                           <span className="font-bold text-white">
                             {m.calfRightCm ?? '—'} / {m.calfLeftCm ?? '—'} cm
@@ -778,7 +858,7 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
                     </div>
 
                     {m.notes && (
-                      <p className="text-xs text-slate-400 italic bg-[#0B0F14] p-2 rounded-xl border border-white/5">
+                      <p className="text-xs text-slate-400 italic bg-surface-input p-2 rounded-xl border border-white/5">
                         "{m.notes}"
                       </p>
                     )}
@@ -940,7 +1020,7 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-white">{log.displayDate}</span>
-                          <span className="px-2 py-0.5 rounded bg-[#121820] text-primary-app text-[11px] font-semibold border border-white/5">
+                          <span className="px-2 py-0.5 rounded bg-surface-card text-primary-app text-[11px] font-semibold border border-white/5">
                             {log.divisionName}
                           </span>
                         </div>
@@ -955,7 +1035,7 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
                         {log.sets.map((st) => (
                           <span
                             key={st.setNumber}
-                            className="px-2 py-1 rounded-lg bg-[#0B0F14] border border-white/5 text-[11px] text-slate-300"
+                            className="px-2 py-1 rounded-lg bg-surface-input border border-white/5 text-[11px] text-slate-300"
                           >
                             Série {st.setNumber}: <strong className="text-white">{st.actualWeightKg}kg</strong> × {st.actualReps} reps
                           </span>
@@ -1041,10 +1121,218 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
       )}
 
       {/* ========================================================
-          SUB-TAB 5: CALENDÁRIO & RELATÓRIOS
+          SUB-TAB: VOLUME MUSCULAR (CP08.3)
+          ======================================================== */}
+      {activeSubTab === 'volume' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="p-4 rounded-2xl bg-surface-card border border-white/10"><span className="text-[10px] uppercase text-slate-400 font-bold">Séries efetivas ponderadas</span><div className="text-2xl font-black text-white mt-1">{muscleVolume.totalEffectiveSets.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</div><span className="text-[10px] text-slate-500">Últimas {muscleVolume.periodWeeks} semanas</span></div>
+            <div className="p-4 rounded-2xl bg-surface-card border border-white/10"><span className="text-[10px] uppercase text-slate-400 font-bold">Treinos contabilizados</span><div className="text-2xl font-black text-white mt-1">{muscleVolume.trainingSessions}</div><span className="text-[10px] text-slate-500">Sessões concluídas</span></div>
+            <div className="p-4 rounded-2xl bg-surface-card border border-white/10 col-span-2 sm:col-span-1"><span className="text-[10px] uppercase text-slate-400 font-bold">Grupos acompanhados</span><div className="text-2xl font-black text-white mt-1">{muscleVolume.rows.length}</div><span className="text-[10px] text-slate-500">Grupos oficiais do catálogo</span></div>
+          </div>
+          <div className="p-5 rounded-3xl bg-surface-card border border-white/10 space-y-4">
+            <div><h3 className="text-sm font-bold text-white">Distribuição por grupo muscular</h3><p className="text-xs text-slate-400 mt-1">Séries efetivas concluídas; aquecimentos não entram no cálculo.</p></div>
+            {muscleVolume.rows.map(row => {
+              const max = Math.max(1, ...muscleVolume.rows.map(r => r.effectiveSets));
+              const pct = Math.min(100, row.effectiveSets / max * 100);
+              return <div key={row.muscleGroup} className="space-y-1.5"><div className="flex justify-between gap-3 text-xs"><span className="font-semibold text-slate-200">{row.label}</span><span className="text-white font-bold tabular-nums">{row.effectiveSets.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} séries</span></div><div className="h-2 rounded-full bg-white/5 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: themeConfig.primaryHex }} /></div><div className="flex justify-between text-[10px] text-slate-500"><span>{row.primarySets.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} primárias · {row.secondarySets.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} secundárias</span><span>{row.sessions} sessões · {(row.frequencyPerWeek).toLocaleString('pt-BR')} /sem</span></div></div>;
+            })}
+          </div>
+          <div className="p-5 rounded-3xl bg-surface-card border border-white/10 space-y-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-white">Evolução por grupo muscular</h3>
+              <p className="text-xs text-slate-400">Selecione um grupo para acompanhar a variação das séries efetivas ao longo das oito semanas.</p>
+            </div>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Selecionar grupo muscular">
+              {muscleVolume.rows.map((row) => {
+                const active = row.muscleGroup === selectedMuscleGroup;
+                return (
+                  <button
+                    key={row.muscleGroup}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setSelectedMuscleGroup(row.muscleGroup)}
+                    className={`px-3 py-2 rounded-xl border text-xs font-semibold transition ${active ? 'text-white border-primary-app bg-primary-surface' : 'text-slate-400 border-white/10 bg-surface-elevated hover:text-white'}`}
+                    style={active ? { borderColor: themeConfig.primaryHex } : undefined}
+                  >
+                    {row.label}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedMuscle && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-2xl bg-surface-elevated border border-white/5">
+                    <span className="text-[10px] uppercase text-slate-400 font-bold">Últimas 4 semanas</span>
+                    <div className="text-xl font-black text-white mt-1">{selectedMuscleTrend.currentTotal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</div>
+                    <span className="text-[10px] text-slate-500">séries ponderadas</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-surface-elevated border border-white/5">
+                    <span className="text-[10px] uppercase text-slate-400 font-bold">4 semanas anteriores</span>
+                    <div className="text-xl font-black text-white mt-1">{selectedMuscleTrend.previousTotal.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</div>
+                    <span className="text-[10px] text-slate-500">séries ponderadas</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-surface-elevated border border-white/5">
+                    <span className="text-[10px] uppercase text-slate-400 font-bold">Variação</span>
+                    <div className={`text-xl font-black mt-1 ${selectedMuscleTrend.direction === 'up' ? 'text-emerald-400' : selectedMuscleTrend.direction === 'down' ? 'text-rose-400' : 'text-white'}`}>
+                      {selectedMuscleTrend.deltaPercent === null ? '—' : `${selectedMuscleTrend.deltaPercent > 0 ? '+' : ''}${selectedMuscleTrend.deltaPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
+                    </div>
+                    <span className="text-[10px] text-slate-500">comparação entre períodos</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-surface-elevated border border-white/5">
+                    <span className="text-[10px] uppercase text-slate-400 font-bold">Média semanal atual</span>
+                    <div className="text-xl font-black text-white mt-1">{selectedMuscleTrend.currentAverage.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</div>
+                    <span className="text-[10px] text-slate-500">séries ponderadas</span>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <h4 className="text-xs font-bold text-white">{selectedMuscle.label} · séries por semana</h4>
+                    <span className="text-[10px] text-slate-500">8 semanas</span>
+                  </div>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 items-end h-36" role="img" aria-label={`Evolução semanal de séries efetivas para ${selectedMuscle.label}`}>
+                    {selectedMuscleTrend.points.map((point) => {
+                      const max = Math.max(1, ...selectedMuscleTrend.points.map((item) => item.sets));
+                      const height = point.sets > 0 ? Math.max(5, point.sets / max * 100) : 3;
+                      return (
+                        <div key={point.weekStart} className="h-full flex flex-col justify-end items-center gap-2">
+                          <span className="text-[9px] text-slate-400 tabular-nums">{point.sets.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</span>
+                          <div className="w-full rounded-t-md" style={{ height: `${height}%`, backgroundColor: themeConfig.primaryHex, opacity: point.sets ? 0.9 : 0.18 }} />
+                          <span className="text-[9px] text-slate-500">{point.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 text-xs text-slate-300 leading-relaxed"><strong className="text-amber-300">Como interpretar:</strong> cada série efetiva vale 1,0 para o músculo principal e 0,5 para cada músculo secundário listado no catálogo. A comparação usa as quatro semanas mais recentes contra as quatro anteriores. É uma estimativa de participação, não uma medida fisiológica direta. Exercícios personalizados com grupo muscular definido também entram no cálculo.</div>
+        </div>
+      )}
+
+      {/* ========================================================
+          SUB-TAB 6: CALENDÁRIO & RELATÓRIOS
           ======================================================== */}
       {activeSubTab === 'reports' && (
         <div className="space-y-6">
+          {/* CP09.3 — Relatório analítico consolidado */}
+          <section className="p-5 sm:p-6 rounded-3xl bg-surface-card border border-white/10 space-y-5" aria-labelledby="performance-report-title">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary-app">CP09.3 · INTELIGÊNCIA DE DESEMPENHO</span>
+                <h3 id="performance-report-title" className="text-base font-black text-white mt-1">Relatório analítico · últimas 8 semanas</h3>
+                <p className="text-xs text-slate-400 mt-1">Comparativo de consistência, séries efetivas, volume movimentado e exercícios com maior participação.</p>
+              </div>
+              <span className="shrink-0 px-2.5 py-1 rounded-lg bg-surface-elevated border border-white/10 text-[10px] font-bold text-slate-300">Dados das sessões concluídas</span>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3.5 rounded-2xl bg-surface-elevated border border-white/5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Treinos concluídos</span>
+                <div className="text-2xl font-black text-white mt-1 tabular-nums">{performanceInsights.completedSessions}</div>
+                <span className="text-[10px] text-slate-500">nas 8 semanas</span>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-surface-elevated border border-white/5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Séries efetivas</span>
+                <div className="text-2xl font-black text-white mt-1 tabular-nums">{performanceInsights.completedSets}</div>
+                <span className="text-[10px] text-slate-500">aquecimentos excluídos</span>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-surface-elevated border border-white/5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Volume movimentado</span>
+                <div className="text-xl sm:text-2xl font-black text-white mt-1 tabular-nums">{formatVolume(performanceInsights.totalVolumeKg)}</div>
+                <span className="text-[10px] text-slate-500">inclui aquecimentos concluídos</span>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-surface-elevated border border-white/5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Consistência</span>
+                <div className="text-2xl font-black text-white mt-1 tabular-nums">{performanceInsights.consistencyPercent}%</div>
+                <span className="text-[10px] text-slate-500">semanas com treino · {performanceInsights.activeWeeks}/8</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
+              <div className="p-4 rounded-2xl bg-surface-elevated border border-white/5 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Volume semanal</h4>
+                    <p className="text-[10px] text-slate-500">kg movimentados por semana · semana atual em andamento</p>
+                  </div>
+                  <BarChart3 className="w-4 h-4 text-primary-app" />
+                </div>
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 items-end h-36" role="img" aria-label="Gráfico de volume movimentado por semana nas últimas oito semanas">
+                  {performanceInsights.weeks.map((week) => {
+                    const max = Math.max(1, ...performanceInsights.weeks.map((item) => item.volumeKg));
+                    const height = week.volumeKg > 0 ? Math.max(5, (week.volumeKg / max) * 100) : 3;
+                    return (
+                      <div key={week.weekStart} className="h-full min-w-0 flex flex-col justify-end items-center gap-1.5">
+                        <span className="text-[9px] text-slate-400 tabular-nums">{week.volumeKg >= 1000 ? `${(week.volumeKg / 1000).toFixed(1)}k` : Math.round(week.volumeKg)}</span>
+                        <div className="w-full rounded-t-md min-h-[3px]" style={{ height: `${height}%`, backgroundColor: themeConfig.primaryHex, opacity: week.volumeKg > 0 ? 0.9 : 0.18 }} />
+                        <span className="text-[9px] text-slate-500">{week.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-400">
+                  <span>{performanceInsights.totalActiveMinutes.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} min ativos</span>
+                  <span>{performanceInsights.averageSessionsPerActiveWeek.toLocaleString('pt-BR')} treinos/semana ativa</span>
+                  <span>{formatVolume(performanceInsights.averageVolumePerSessionKg)} por treino em média</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-surface-elevated border border-white/5 space-y-3">
+                <h4 className="text-xs font-bold text-white">Comparativo de períodos</h4>
+                <p className="text-[10px] text-slate-500">4 semanas mais recentes contra as 4 anteriores · semana atual pode estar incompleta</p>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs"><span className="text-slate-400">Volume atual</span><strong className="text-white tabular-nums">{formatVolume(performanceInsights.recentFourWeekVolumeKg)}</strong></div>
+                  <div className="flex items-center justify-between text-xs"><span className="text-slate-400">Volume anterior</span><strong className="text-white tabular-nums">{formatVolume(performanceInsights.previousFourWeekVolumeKg)}</strong></div>
+                  <div className="h-px bg-white/5 my-2" />
+                  <div className="flex items-center justify-between gap-2"><span className="text-xs text-slate-400">Variação do volume</span><strong className={`text-sm tabular-nums ${performanceInsights.volumeChangePercent === null ? 'text-slate-400' : performanceInsights.volumeChangePercent > 0 ? 'text-emerald-400' : performanceInsights.volumeChangePercent < 0 ? 'text-rose-400' : 'text-white'}`}>{performanceInsights.volumeChangePercent === null ? 'Sem base' : `${performanceInsights.volumeChangePercent > 0 ? '+' : ''}${performanceInsights.volumeChangePercent}%`}</strong></div>
+                  <div className="flex items-center justify-between gap-2"><span className="text-xs text-slate-400">Variação de treinos</span><strong className={`text-sm tabular-nums ${performanceInsights.sessionsChangePercent === null ? 'text-slate-400' : performanceInsights.sessionsChangePercent > 0 ? 'text-emerald-400' : performanceInsights.sessionsChangePercent < 0 ? 'text-rose-400' : 'text-white'}`}>{performanceInsights.sessionsChangePercent === null ? 'Sem base' : `${performanceInsights.sessionsChangePercent > 0 ? '+' : ''}${performanceInsights.sessionsChangePercent}%`}</strong></div>
+                </div>
+                {performanceInsights.bestWeek && (
+                  <div className="p-3 rounded-xl bg-surface-card border border-white/5">
+                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Melhor semana registrada</span>
+                    <div className="text-sm font-black text-white mt-1">{performanceInsights.bestWeek.label} · {formatVolume(performanceInsights.bestWeek.volumeKg)}</div>
+                    <span className="text-[10px] text-slate-500">{performanceInsights.bestWeek.sessions} treinos · {performanceInsights.bestWeek.completedSets} séries efetivas</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-surface-elevated border border-white/5 space-y-3">
+                <h4 className="text-xs font-bold text-white">Exercícios em destaque</h4>
+                {performanceInsights.exerciseHighlights.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-3">Ainda não há séries efetivas suficientes para gerar este ranking.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {performanceInsights.exerciseHighlights.slice(0, 5).map((exercise, index) => (
+                      <div key={exercise.exerciseId} className="flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2 min-w-0"><span className="w-5 h-5 shrink-0 rounded-md bg-surface-card text-slate-400 flex items-center justify-center text-[10px] font-bold">{index + 1}</span><span className="font-semibold text-slate-200 truncate">{exercise.exerciseName}</span></div>
+                        <div className="shrink-0 text-right"><strong className="text-white tabular-nums">{formatVolume(exercise.volumeKg)}</strong><span className="block text-[10px] text-slate-500">{exercise.sessions} sessões · máx. {exercise.maxWeightKg} kg</span></div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="p-4 rounded-2xl bg-surface-elevated border border-white/5 space-y-3">
+                <h4 className="text-xs font-bold text-white">Distribuição muscular no período</h4>
+                {muscleVolume.rows.filter((row) => row.effectiveSets > 0).length === 0 ? (
+                  <p className="text-xs text-slate-500 py-3">O histórico ainda não contém exercícios com grupos musculares identificados.</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {muscleVolume.rows.filter((row) => row.effectiveSets > 0).slice(0, 6).map((row) => {
+                      const max = Math.max(1, ...muscleVolume.rows.map((item) => item.effectiveSets));
+                      return <div key={row.muscleGroup} className="space-y-1"><div className="flex justify-between gap-2 text-[11px]"><span className="text-slate-300">{row.label}</span><strong className="text-white tabular-nums">{row.effectiveSets.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</strong></div><div className="h-1.5 rounded-full bg-white/5 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(100, row.effectiveSets / max * 100)}%`, backgroundColor: themeConfig.primaryHex }} /></div></div>;
+                    })}
+                  </div>
+                )}
+                <p className="text-[10px] leading-relaxed text-slate-500">Séries ponderadas: músculo principal 1,0; secundário 0,5. Exercícios personalizados com grupos musculares definidos também são considerados.</p>
+              </div>
+            </div>
+          </section>
+
           {/* Export Options Banner */}
           <div className="p-5 rounded-3xl bg-surface-card border border-white/10 space-y-3">
             <div className="flex items-center justify-between">
@@ -1060,6 +1348,20 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ onNavigate }) => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={handleDownloadPerformanceJson}
+                className="p-3.5 rounded-2xl bg-surface-elevated border border-white/10 hover:border-primary-app transition flex items-center gap-3 text-left group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-primary-surface flex items-center justify-center shrink-0 border border-primary-app/30"><BarChart3 className="w-5 h-5 text-primary-app" /></div>
+                <div><span className="text-xs font-bold text-white block group-hover:text-primary-app transition">Relatório analítico JSON</span><span className="text-[11px] text-slate-400 block mt-0.5">Resumo, evolução semanal, grupos musculares e exercícios</span></div>
+              </button>
+              <button
+                onClick={handleDownloadPerformanceCsv}
+                className="p-3.5 rounded-2xl bg-surface-elevated border border-white/10 hover:border-emerald-400 transition flex items-center gap-3 text-left group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-500/30"><FileSpreadsheet className="w-5 h-5 text-emerald-400" /></div>
+                <div><span className="text-xs font-bold text-white block group-hover:text-emerald-400 transition">Relatório analítico CSV</span><span className="text-[11px] text-slate-400 block mt-0.5">Planilha com comparativos e indicadores de desempenho</span></div>
+              </button>
               <button
                 onClick={handleDownloadJson}
                 className="p-3.5 rounded-2xl bg-surface-elevated border border-white/10 hover:border-primary-app transition flex items-center gap-3 text-left group"

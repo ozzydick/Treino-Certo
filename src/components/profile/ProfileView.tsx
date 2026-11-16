@@ -670,7 +670,7 @@ export const ProfileView: React.FC<Props> = ({ onOpenThemeModal, onOpenEquipment
       {/* Confirmation Modal for Restore */}
       {showConfirmRestoreModal && pendingValidation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in">
-          <div className="w-full max-w-md rounded-3xl bg-[#121820] border border-white/15 p-6 shadow-2xl relative space-y-4">
+          <div className="w-full max-w-md rounded-3xl bg-surface-card border border-white/15 p-6 shadow-2xl relative space-y-4">
             <button
               onClick={() => {
                 setShowConfirmRestoreModal(false);
@@ -748,7 +748,7 @@ export const ProfileView: React.FC<Props> = ({ onOpenThemeModal, onOpenEquipment
         <Info className="w-4 h-4 text-primary-app shrink-0 mt-0.5" />
         <div className="text-xs text-slate-400 leading-relaxed">
           <strong className="text-white">TREINO CERTO — CHECKPOINT 01:</strong> Identidade visual,
-          sistema de 6 temas, navegação em 5 abas, PWA e Perfil implementados com IndexedDB. Nenhum
+          sistema de 7 temas, navegação em 5 abas, PWA e Perfil implementados com IndexedDB. Nenhum
           dado pessoal fictício está presente no banco inicial.
         </div>
       </div>

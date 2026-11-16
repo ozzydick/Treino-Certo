@@ -1,0 +1,72 @@
+### scripts/test-checkpoint08-1.mjs
+PASS sintaxe src/types/index.ts
+PASS sintaxe src/context/WorkoutContext.tsx
+PASS sintaxe src/components/workout/WorkoutExecutionView.tsx
+PASS tipos de série aquecimento/efetiva/drop/falha
+PASS RPE e RIR opcionais por série
+PASS sugestão baseada na sessão concluída anterior
+PASS seletor de tipo de série na execução
+PASS controles RPE/RIR na execução
+CP08.1: verificações estáticas aprovadas.
+### scripts/test-checkpoint08-2.mjs
+PASS sintaxe src/utils/workoutProgress.ts
+PASS sintaxe src/components/workout/WorkoutHistoryView.tsx
+PASS estimativa Epley limitada a 1–12 repetições
+PASS séries incompletas e aquecimento excluídos
+PASS PRs derivados de sessões concluídas
+PASS gráfico histórico por exercício
+PASS sem armazenamento paralelo de PRs
+CP08.2: verificações estáticas aprovadas.
+### scripts/test-checkpoint08-3.mjs
+CP08.3 static checks: 10/10 passed
+### scripts/test-checkpoint08-4.mjs
+CP08.4: 12/12 static checks passed
+### scripts/test-checkpoint08-5.mjs
+CP08.5: 9/9 functional-flow static checks passed
+### scripts/test-equipment-3d-catalog.mjs
+PASS: catálogo oficial contém 54 IDs únicos
+PASS: 54 imagens 3D individuais vinculadas aos IDs corretos
+PASS: carregamento lazy/async configurado
+PASS: SVG original preservado como fallback para os equipamentos ainda sem render 3D
+### scripts/test-refresh-preserves-view.mjs
+PASS botão de atualização no cabeçalho
+PASS estado da aba preservado
+PASS visão interna da academia preservada
+PASS modal atual preservado
+PASS posição de rolagem preservada
+PASS estado temporário guardado por sessão
+PASS estado temporário consumido uma única vez
+PASS recarga nativa acionada pelo botão
+Refresh preserve-view: 8/8 checks passed
+### scripts/test-checkpoint09-1.mjs
+CP09.1: telas secundárias com carregamento sob demanda (6/6)
+CP09.1: fallback Suspense e restauração CP08.9 preservados
+CP09.1: estratégia PWA mantém WebP/PNG/SVG offline e exclui assets/aistudio
+CP09.1: imagens 3D lazy/async e catálogos íntegros (180 exercícios + 54 equipamentos)
+CP09.1: 43 JPEGs legados sem referências removidos com segurança
+CP09.1: leitura de fotos personalizadas adiada até abrir Minha Academia
+### scripts/test-checkpoint09-1-performance.mjs
+CP09.1 performance: catálogo oficial separado do bundle inicial por importação dinâmica — aprovado.
+CP09.1 imagens: 54 equipamentos 643.4 KB; 180 exercícios 6.49 MB — aprovado.
+CP09.1 armazenamento: compressão 720px/0.78 e limites de mídia — aprovado estruturalmente.
+CP09.1 PWA: recursos WebP mantidos; 15 arquivos internos preservados fora de public — aprovado.
+### scripts/test-checkpoint09-1-custom-photo-optimization.mjs
+CP09.1 custom photo optimization: 8/8 structural checks passed.
+### scripts/test-checkpoint09-1-lazy-exercise-modals.mjs
+CP09.1 lazy exercise modals: 7/7 structural checks passed.
+### scripts/test-checkpoint09-2-1.mjs
+CP09.2 Bloco 01: progresso geral e por exercício com acessibilidade aprovados.
+### scripts/test-checkpoint09-2-2.mjs
+CP09.2 Bloco 02: layout responsivo e controles acessíveis de séries/carga/repetições aprovados.
+### scripts/test-checkpoint09-2-3.mjs
+CP09.2 Bloco 03: presets de descanso acessíveis e transpilação TSX aprovados.
+### scripts/test-checkpoint09-3.mjs
+CP09.3: transpile TSX, estados de salvamento/finalização, controles acessíveis do descanso e invariantes de persistência aprovados.
+### scripts/test-checkpoint09-3-muscle-trend.mjs
+CP09.3 Bloco 01: estrutura do comparativo muscular e regras de séries efetivas verificadas.
+### scripts/test-checkpoint09-4.mjs
+CP09.4: TSX do histórico, filtros/ordenação funcionais, estados vazios e exportação CSV (UTF-8, escaping e uma linha por série) aprovados.
+### scripts/test-checkpoint09-5.mjs
+CP09.5: oito semanas, frequência, séries concluídas, volume, comparativo, melhor semana, histórico imutável e estados vazios aprovados.
+### scripts/test-checkpoint09-5-theme-pwa.mjs
+CP09.5 tema/PWA: sete temas, OCEANO, compatibilidade de backup, cores do manifest, precache offline e quatro ícones verificados.

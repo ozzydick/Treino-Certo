@@ -155,7 +155,7 @@ export const MeasurementModal: React.FC<MeasurementModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl bg-[#0F141C] border border-white/10 shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl bg-surface-input border border-white/10 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-white/10 shrink-0">
           <div>

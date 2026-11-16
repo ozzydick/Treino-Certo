@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from '/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript/lib/typescript.js';
+const source = fs.readFileSync('src/components/workout/WorkoutExecutionView.tsx', 'utf8');
+const transpiled = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }, reportDiagnostics: true });
+assert.equal((transpiled.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0, 'execution view must transpile');
+assert.match(source, /map\(\(exLog, index\) => \{\s*if \(index !== currentExerciseIndex\) return exLog;/, 'set mutations must target the exact exercise occurrence');
+assert.match(source, /map\(\(log, index\) => index !== currentExerciseIndex/, 'set type mutation must target exact exercise occurrence');
+assert.match(source, /const members = \(savedSession\.exerciseLogs \|\| \[\]\)/, 'group flow must use persisted session state');
+assert.match(source, /const roundComplete = members\.every/, 'rest must wait until the group round is complete');
+assert.match(source, /const nextMember = members\.find/, 'execution must advance to next incomplete group member');
+assert.match(source, /const firstNextRound = members\.find/, 'execution must return to first member of next round');
+assert.match(source, /startRestTimer\(60\)/, 'rest timer must start after a completed round');
+assert.doesNotMatch(source, /if \(exLog\.exerciseId !== currentExLog\.exerciseId\)/, 'duplicate exercise IDs must not mutate multiple session entries');
+console.log('CP08.5: 9/9 functional-flow static checks passed');

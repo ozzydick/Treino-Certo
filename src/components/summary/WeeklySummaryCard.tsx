@@ -163,7 +163,7 @@ export const WeeklySummaryCard: React.FC = () => {
 
       {/* Highlights */}
       {summary.highlights.length > 0 && (
-        <div className="p-3.5 rounded-2xl bg-[#0B0F14] border border-white/5 space-y-2">
+        <div className="p-3.5 rounded-2xl bg-surface-input border border-white/5 space-y-2">
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-primary-app" />
             <span>Destaques da Semana:</span>

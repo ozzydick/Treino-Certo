@@ -33,9 +33,9 @@ export const ThemeLibraryModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-xl max-h-[92vh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-[#0F141B] border border-white/10 shadow-2xl overflow-hidden">
+      <div className="w-full max-w-xl max-h-[92vh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-surface-card border border-white/10 shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#141B24]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-surface-elevated">
           <div className="flex items-center gap-2.5">
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center border border-white/10"
@@ -78,7 +78,7 @@ export const ThemeLibraryModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Mini Simulated UI */}
-            <div className="rounded-xl bg-[#090D11] border border-white/10 p-3.5 space-y-3">
+            <div className="rounded-xl bg-surface-input border border-white/10 p-3.5 space-y-3">
               {/* Header simulation */}
               <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
                 <div className="flex items-center gap-2">
@@ -152,7 +152,7 @@ export const ThemeLibraryModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Selecione uma identidade visual (6 temas disponíveis)
+                Selecione uma identidade visual (7 temas disponíveis)
               </h3>
             </div>
 
@@ -274,7 +274,7 @@ export const ThemeLibraryModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer actions */}
-        <div className="p-4 border-t border-white/10 bg-[#141B24] flex items-center justify-between gap-3">
+        <div className="p-4 border-t border-white/10 bg-surface-elevated flex items-center justify-between gap-3">
           <div className="text-xs text-slate-400">
             {justApplied ? (
               <span className="text-emerald-400 font-semibold flex items-center gap-1">

@@ -539,7 +539,7 @@ async function runCheckpoint05TestSuite() {
     `Backup validado com 7 tabelas oficiais. body_measurements: ${backupValidation.details?.recordCounts.body_measurements}`
   );
 
-  // Teste 21: Preservação de integridade dos 48 exercícios e imagens WebP
+  // Teste 21: Preservação de integridade do catálogo oficial e imagens WebP
   let missingFiles = 0;
   for (const ex of DEFAULT_EXERCISES_CATALOG) {
     const expectedPath = `public/images/exercises/${ex.id}.webp`;
